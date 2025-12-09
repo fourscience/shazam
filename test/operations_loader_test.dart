@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-import '../lib/src/operations.dart';
+import 'package:shazam/src/operations.dart';
 
 void main() {
   test('OperationsLoader reads only top-level .graphql files', () async {

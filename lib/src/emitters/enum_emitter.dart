@@ -1,6 +1,6 @@
 import 'package:code_builder/code_builder.dart';
 
-import '../ir.dart';
+import 'package:shazam/src/ir.dart';
 
 class EnumEmitter {
   Spec emitEnum(EnumIr enm) {

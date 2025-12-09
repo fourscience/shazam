@@ -1,6 +1,6 @@
 import 'package:change_case/change_case.dart';
 
-import 'config.dart';
+import 'package:shazam/src/config.dart';
 
 /// Shared naming utilities backed by [Config.sanitizeIdentifier].
 class NamingHelper {

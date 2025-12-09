@@ -2,16 +2,16 @@ import 'dart:io';
 
 import 'package:gql/ast.dart';
 
-import 'builders/document_ir_builder.dart';
-import 'builders/ir_context.dart';
-import 'config.dart';
-import 'ir.dart';
-import 'operations.dart';
-import 'plugin.dart';
-import 'renderer.dart';
-import 'schema.dart';
-import 'schema_index.dart';
-import 'schema_docs.dart';
+import 'package:shazam/src/builders/document_ir_builder.dart';
+import 'package:shazam/src/builders/ir_context.dart';
+import 'package:shazam/src/config.dart';
+import 'package:shazam/src/ir.dart';
+import 'package:shazam/src/operations.dart';
+import 'package:shazam/src/plugin.dart';
+import 'package:shazam/src/renderer.dart';
+import 'package:shazam/src/schema.dart';
+import 'package:shazam/src/schema_docs.dart';
+import 'package:shazam/src/schema_index.dart';
 
 class SchemaContext {
   SchemaContext({required this.schema, required this.index});

@@ -5,14 +5,14 @@ environment:
 
 dependencies:
   args: ^2.4.2
-  path: ^1.8.3
-  yaml: ^3.1.2
-  gql: ^1.0.0
-  watcher: ^1.1.0
-  dart_style: ^2.3.4
-  collection: ^1.18.0
-  code_builder: ^4.10.0
   change_case: ^2.2.0
+  code_builder: ^4.10.0
+  collection: ^1.18.0
+  dart_style: ^2.3.4
+  gql: ^1.0.0
+  path: ^1.8.3
+  watcher: ^1.1.0
+  yaml: ^3.1.2
 
 dev_dependencies:
   lints: ^3.0.0

@@ -1,5 +1,5 @@
-import '../config.dart';
-import '../name_type_helpers.dart';
+import 'package:shazam/src/config.dart';
+import 'package:shazam/src/name_type_helpers.dart';
 
 class SerializerEmitter {
   SerializerEmitter(this.typeHelper, this.scalarTypes);

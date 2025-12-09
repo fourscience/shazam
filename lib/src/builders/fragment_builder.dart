@@ -1,8 +1,9 @@
 import 'package:gql/ast.dart';
 
-import '../ir.dart';
-import '../name_type_helpers.dart';
-import '../operations.dart';
+import 'package:shazam/src/ir.dart';
+import 'package:shazam/src/name_type_helpers.dart';
+import 'package:shazam/src/operations.dart';
+
 import 'ir_context.dart';
 import 'record_builder.dart';
 

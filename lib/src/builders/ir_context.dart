@@ -1,8 +1,8 @@
-import '../config.dart';
-import '../ir.dart';
-import '../schema.dart';
-import '../schema_index.dart';
-import '../schema_docs.dart';
+import 'package:shazam/src/config.dart';
+import 'package:shazam/src/ir.dart';
+import 'package:shazam/src/schema.dart';
+import 'package:shazam/src/schema_docs.dart';
+import 'package:shazam/src/schema_index.dart';
 
 /// Shared context passed to IR builders.
 class IrBuildContext {

@@ -1,9 +1,10 @@
 import 'package:code_builder/code_builder.dart';
 
-import '../ir.dart';
-import '../name_type_helpers.dart';
+import 'package:shazam/src/alias_helper.dart';
+import 'package:shazam/src/ir.dart';
+import 'package:shazam/src/name_type_helpers.dart';
+
 import 'serializer_emitter.dart';
-import '../alias_helper.dart';
 
 class RecordEmitter {
   RecordEmitter(this.typeHelper, this.serializer)

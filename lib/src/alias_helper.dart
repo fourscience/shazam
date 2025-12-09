@@ -1,4 +1,4 @@
-import 'ir.dart';
+import 'package:shazam/src/ir.dart';
 
 /// Centralized helper for handling aliased field JSON access.
 class AliasHelper {

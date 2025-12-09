@@ -1,9 +1,10 @@
-import '../ir.dart';
-import '../operations.dart';
-import '../name_type_helpers.dart';
+import 'package:shazam/src/ir.dart';
+import 'package:shazam/src/name_type_helpers.dart';
+import 'package:shazam/src/operations.dart';
+
 import 'fragment_builder.dart';
-import 'ir_context.dart';
 import 'input_builder.dart';
+import 'ir_context.dart';
 import 'operation_builder.dart';
 import 'record_builder.dart';
 

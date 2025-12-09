@@ -3,9 +3,9 @@ import 'dart:mirrors';
 
 import 'package:path/path.dart' as p;
 
-import 'config.dart';
-import 'log.dart';
-import 'plugin.dart';
+import 'package:shazam/src/config.dart';
+import 'package:shazam/src/log.dart';
+import 'package:shazam/src/plugin.dart';
 
 /// Loads GeneratorPlugin instances from the plugin paths configured in
 /// config.yaml. Each plugin file must export either:

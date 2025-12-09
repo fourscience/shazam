@@ -1,8 +1,9 @@
 import 'package:gql/ast.dart';
 
-import '../ir.dart';
-import '../name_type_helpers.dart';
-import '../schema.dart';
+import 'package:shazam/src/ir.dart';
+import 'package:shazam/src/name_type_helpers.dart';
+import 'package:shazam/src/schema.dart';
+
 import 'ir_context.dart';
 
 /// Builds IR records for input objects, suffixing names with `Input`.

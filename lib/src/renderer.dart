@@ -7,15 +7,15 @@ import 'package:gql/ast.dart';
 import 'package:gql/language.dart';
 import 'package:path/path.dart' as p;
 
-import 'config.dart';
-import 'ir.dart';
-import 'log.dart';
-import 'plugin.dart';
-import 'emitters/enum_emitter.dart';
-import 'emitters/operation_emitter.dart';
-import 'emitters/record_emitter.dart';
-import 'emitters/serializer_emitter.dart';
-import 'name_type_helpers.dart';
+import 'package:shazam/src/config.dart';
+import 'package:shazam/src/emitters/enum_emitter.dart';
+import 'package:shazam/src/emitters/operation_emitter.dart';
+import 'package:shazam/src/emitters/record_emitter.dart';
+import 'package:shazam/src/emitters/serializer_emitter.dart';
+import 'package:shazam/src/ir.dart';
+import 'package:shazam/src/log.dart';
+import 'package:shazam/src/name_type_helpers.dart';
+import 'package:shazam/src/plugin.dart';
 
 /// Contract for rendering a document IR into generated outputs.
 abstract class Renderer {

@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-import '../lib/src/config.dart';
-import '../lib/src/generator.dart';
-import '../lib/src/ir.dart';
-import '../lib/src/operations.dart';
-import '../lib/src/plugin.dart';
-import '../lib/src/renderer.dart';
+import 'package:shazam/src/config.dart';
+import 'package:shazam/src/generator.dart';
+import 'package:shazam/src/ir.dart';
+import 'package:shazam/src/operations.dart';
+import 'package:shazam/src/plugin.dart';
+import 'package:shazam/src/renderer.dart';
 
 class _FakeOperationsLoader implements OperationsLoader {
   _FakeOperationsLoader(this.bundle);

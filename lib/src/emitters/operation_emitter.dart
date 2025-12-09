@@ -6,9 +6,9 @@ import 'package:code_builder/code_builder.dart';
 import 'package:gql/ast.dart';
 import 'package:gql/language.dart';
 
-import '../config.dart';
-import '../ir.dart';
-import '../name_type_helpers.dart';
+import 'package:shazam/src/config.dart';
+import 'package:shazam/src/ir.dart';
+import 'package:shazam/src/name_type_helpers.dart';
 
 class OperationEmitter {
   OperationEmitter(this.config, this.typeHelper);

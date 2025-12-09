@@ -1,5 +1,5 @@
 import 'package:code_builder/code_builder.dart';
-import 'ir.dart';
+import 'package:shazam/src/ir.dart';
 
 /// Semantic version of the IR surface passed to plugins.
 /// Bump when breaking changes are made to [DocumentIr] or related models.

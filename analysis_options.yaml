@@ -8,6 +8,17 @@ analyzer:
     - "**/__generated__/**"
   language:
     strict-raw-types: true
+  errors:
+    public_member_api_docs: ignore
+    lines_longer_than_80_chars: ignore
+    avoid_redundant_argument_values: ignore
+    cascade_invocations: ignore
+    unnecessary_brace_in_string_interps: ignore
+    avoid_positional_boolean_parameters: ignore
+    no_leading_underscores_for_local_identifiers: ignore
+    one_member_abstracts: ignore
+    avoid_dynamic_calls: ignore
+    comment_references: ignore
 linter:
   rules:
     - prefer_final_locals

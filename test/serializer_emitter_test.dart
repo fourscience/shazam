@@ -1,8 +1,8 @@
 import 'package:test/test.dart';
 
-import '../lib/src/config.dart';
-import '../lib/src/emitters/serializer_emitter.dart';
-import '../lib/src/name_type_helpers.dart';
+import 'package:shazam/src/config.dart';
+import 'package:shazam/src/emitters/serializer_emitter.dart';
+import 'package:shazam/src/name_type_helpers.dart';
 
 void main() {
   group('SerializerEmitter', () {
