@@ -37,12 +37,18 @@ class FragmentBuilder {
       throw StateError('Fragment $name not found');
     }
     final deps = _collectDeps(def.selectionSet);
-    final record = recordBuilder.build(
-      rootType: def.typeCondition.on.name.value,
-      selection: def.selectionSet,
-      name: name,
-      owner: name,
-    );
+    late final RecordIr record;
+    try {
+      record = recordBuilder.build(
+        rootType: def.typeCondition.on.name.value,
+        selection: def.selectionSet,
+        name: name,
+        owner: name,
+      );
+    } catch (e) {
+      throw StateError(
+          'Failed to build fragment "$name": $e. Verify schema fields, scalar mappings, and keyword replacements.');
+    }
     for (final dep in deps) {
       final depFrag = build(dep);
       for (final entry in depFrag.record.fields.entries) {

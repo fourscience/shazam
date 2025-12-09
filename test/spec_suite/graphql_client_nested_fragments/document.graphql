@@ -1,0 +1,15 @@
+type Query {
+    field: T1
+}
+
+type T1 {
+    name: String
+    field: T1
+}
+
+fragment F1 on T1{
+    name
+    field {
+        ...F2
+    }
+}

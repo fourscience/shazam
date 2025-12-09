@@ -26,8 +26,13 @@ class InputBuilder {
     if (context.cache.records.containsKey(name)) {
       return context.cache.records[name]!;
     }
-    final record =
-        RecordIr(name: name, fields: {}, isInput: true, variants: {});
+    final record = RecordIr(
+      name: name,
+      fields: {},
+      isInput: true,
+      variants: {},
+      description: context.docs.typeDescription(input.name.value),
+    );
     context.cache.records[name] = record;
 
     for (final field in input.fields) {
@@ -36,9 +41,13 @@ class InputBuilder {
       record.fields[field.name.value] = FieldIr(
         name: naming.sanitize(field.name.value),
         jsonKey: field.name.value,
+        sourceName: field.name.value,
         type: dartType,
         nullable: !typeRef.isNonNull,
         thunkTarget: null,
+        description:
+            context.docs.inputFieldDescription(input.name.value, field.name.value),
+        defaultValue: _valueFromNode(field.defaultValue),
       );
     }
     return record;
@@ -81,6 +90,9 @@ class InputBuilder {
           final nestedName = _inputTypeName(base);
           return ref.isNonNull ? nestedName : '$nestedName?';
         }
+        if (context.schema.scalars.contains(base)) {
+          return ref.isNonNull ? 'String' : 'String?';
+        }
         return ref.isNonNull
             ? selectionRecordName ?? base
             : '${selectionRecordName ?? base}?';
@@ -96,4 +108,23 @@ class InputBuilder {
 
   String _pref(String name) =>
       '${context.config.namePrefix}${naming.pascal(name)}';
+  dynamic _valueFromNode(ValueNode? node) {
+    if (node == null) return null;
+    if (node is IntValueNode) return int.parse(node.value);
+    if (node is FloatValueNode) return double.parse(node.value);
+    if (node is StringValueNode) return node.value;
+    if (node is BooleanValueNode) return node.value;
+    if (node is EnumValueNode) return node.name.value;
+    if (node is ListValueNode) {
+      return node.values.map(_valueFromNode).toList();
+    }
+    if (node is ObjectValueNode) {
+      return {
+        for (final field in node.fields)
+          field.name.value: _valueFromNode(field.value)
+      };
+    }
+    if (node is NullValueNode) return null;
+    return null;
+  }
 }

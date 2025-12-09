@@ -28,7 +28,13 @@ class RecordBuilder {
       return context.cache.records[name]!;
     }
     if (records.containsKey(name)) return records[name]!;
-    final spec = RecordIr(name: name, fields: {}, owner: owner, variants: {});
+    final spec = RecordIr(
+      name: name,
+      fields: {},
+      owner: owner,
+      variants: {},
+      description: context.docs.typeDescription(rootType),
+    );
     records[name] = spec;
 
     final parentFields = _fieldsFor(rootType);
@@ -41,26 +47,38 @@ class RecordBuilder {
         final fieldDef = parentFields
             ?.firstWhereOrNull((f) => f.name.value == sel.name.value);
         if (fieldDef == null) {
-          spec.fields[fieldName] = FieldIr(
+          // __typename is always a non-null String per spec, even when the
+          // parent type has no fields (e.g., unions).
+          final field = FieldIr(
             name: fieldName,
             jsonKey: jsonKey,
-            type: 'dynamic',
-            nullable: true,
+            sourceName: sel.name.value,
+            type: sel.name.value == '__typename' ? 'String' : 'dynamic',
+            nullable: sel.name.value != '__typename',
             thunkTarget: null,
           );
+          spec.fields[fieldName] = field;
+          _maybeAddAlias(sel, field, spec);
           continue;
         }
         final typeRef = TypeRef.fromNode(fieldDef.type);
         if (sel.selectionSet == null) {
           final dartType = _dartTypeFor(typeRef,
               hint: fieldDef.type, selectionRecordName: null);
-          spec.fields[fieldName] = FieldIr(
+          final fieldDescription =
+              context.docs.fieldDescription(rootType, sel.name.value);
+          final field = FieldIr(
             name: fieldName,
             jsonKey: jsonKey,
+            sourceName: sel.name.value,
             type: dartType,
             nullable: !typeRef.isNonNull,
             thunkTarget: null,
+            description: fieldDescription ?? fieldDef.description?.value,
+            defaultValue: null,
           );
+          spec.fields[fieldName] = field;
+          _maybeAddAlias(sel, field, spec);
         } else {
           final nestedName = '${name}${naming.pascal(fieldName)}';
           final namedType = _namedType(typeRef);
@@ -71,13 +89,20 @@ class RecordBuilder {
             owner: owner,
           );
           final dartType = _wrapType(nestedRecord.name, typeRef);
-          spec.fields[fieldName] = FieldIr(
+          final fieldDescription =
+              context.docs.fieldDescription(rootType, sel.name.value);
+          final field = FieldIr(
             name: fieldName,
             jsonKey: jsonKey,
+            sourceName: sel.name.value,
             type: dartType,
             nullable: !typeRef.isNonNull,
             thunkTarget: null,
+            description: fieldDescription ?? fieldDef.description?.value,
+            defaultValue: null,
           );
+          spec.fields[fieldName] = field;
+          _maybeAddAlias(sel, field, spec);
         }
       } else if (sel is FragmentSpreadNode) {
         final fragName = _pref(sel.name.value);
@@ -85,6 +110,7 @@ class RecordBuilder {
         if (fragRecord != null) {
           for (final entry in fragRecord.fields.entries) {
             spec.fields.putIfAbsent(entry.key, () => entry.value);
+            _maybeAddAliasFromField(entry.value, spec);
           }
         }
       } else if (sel is InlineFragmentNode) {
@@ -107,9 +133,12 @@ class RecordBuilder {
           spec.fields[variantField] = FieldIr(
             name: variantField,
             jsonKey: naming.camel(typeCondition),
+            sourceName: typeCondition,
             type: '${nested.name}?',
             nullable: true,
             thunkTarget: null,
+            description: null,
+            defaultValue: null,
           );
         }
       }
@@ -121,9 +150,12 @@ class RecordBuilder {
       spec.fields['typeName'] = FieldIr(
         name: 'typeName',
         jsonKey: '__typename',
+        sourceName: '__typename',
         type: 'String',
         nullable: false,
         thunkTarget: null,
+        description: null,
+        defaultValue: null,
       );
     }
 
@@ -172,6 +204,9 @@ class RecordBuilder {
           return ref.isNonNull ? enumName : '$enumName?';
         }
         final typeName = selectionRecordName ?? _pref(base);
+        if (context.schema.scalars.contains(base)) {
+          return ref.isNonNull ? 'String' : 'String?';
+        }
         return ref.isNonNull ? typeName : '$typeName?';
     }
   }
@@ -197,4 +232,40 @@ class RecordBuilder {
 
   List<FieldDefinitionNode>? _fieldsFor(String typeName) =>
       context.schemaIndex.fieldsFor(typeName);
+
+  void _maybeAddAliasFromField(FieldIr field, RecordIr spec) {
+    if (field.sourceName == field.jsonKey) return;
+    if (field.sourceName.startsWith('__')) return;
+    final originalName = naming.sanitize(field.sourceName);
+    if (spec.fields.containsKey(originalName)) return;
+    final aliasType = field.type;
+    spec.fields[originalName] = FieldIr(
+      name: originalName,
+      jsonKey: field.sourceName,
+      sourceName: field.jsonKey,
+      type: aliasType,
+      nullable: field.nullable,
+      thunkTarget: field.thunkTarget,
+      description: field.description,
+      defaultValue: field.defaultValue,
+    );
+  }
+
+  void _maybeAddAlias(FieldNode sel, FieldIr field, RecordIr spec) {
+    if (sel.alias == null) return;
+    if (sel.name.value.startsWith('__')) return;
+    final originalName = naming.sanitize(sel.name.value);
+    if (spec.fields.containsKey(originalName)) return;
+    final aliasType = field.type;
+    spec.fields[originalName] = FieldIr(
+      name: originalName,
+      jsonKey: sel.name.value,
+      sourceName: field.jsonKey,
+      type: aliasType,
+      nullable: field.nullable,
+      thunkTarget: field.thunkTarget,
+      description: field.description,
+      defaultValue: field.defaultValue,
+    );
+  }
 }

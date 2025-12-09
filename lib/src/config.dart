@@ -15,6 +15,7 @@ class Config {
     required this.scalarMapping,
     required this.configPath,
     required this.keywordReplacements,
+    required this.pluginPaths,
   });
 
   final String outputDir;
@@ -27,6 +28,7 @@ class Config {
   final bool emitHelpers;
   final Map<String, ScalarConfig> scalarMapping;
   final Map<String, String> keywordReplacements;
+  final List<String> pluginPaths;
 
   static Future<Config> load(File file) async {
     if (!file.existsSync()) {
@@ -50,11 +52,16 @@ class Config {
     final nullableMode = _parseNullableMode(doc['nullable_mode'] as String?);
 
     final schemaPath = doc['schema'] as String? ?? 'schema.graphql';
+    final inputDir = doc['input_dir'] as String? ?? 'lib';
     final configDir = p.dirname(file.path);
+    final pluginSection = doc['plugins'] as YamlList?;
+    final pluginPaths = pluginSection == null
+        ? const <String>[]
+        : pluginSection.cast<String>().toList();
 
     final cfg = Config(
       outputDir: doc['output_dir'] as String? ?? 'generated',
-      inputDir: doc['input_dir'] as String? ?? 'lib',
+      inputDir: p.normalize(p.join(configDir, inputDir)),
       nullableMode: nullableMode,
       namePrefix: doc['name_prefix'] as String? ?? 'Gql',
       compressQueries: (doc['compress_queries'] as bool?) ?? true,
@@ -63,6 +70,10 @@ class Config {
       scalarMapping: scalars,
       configPath: file.path,
       keywordReplacements: keywordReplacements,
+      pluginPaths: pluginPaths
+          .map((path) =>
+              p.isAbsolute(path) ? path : p.normalize(p.join(configDir, path)))
+          .toList(),
     );
     cfg._validate();
     return cfg;
@@ -89,6 +100,7 @@ class Config {
         scalarMapping: {},
         configPath: 'config.yaml',
         keywordReplacements: const {},
+        pluginPaths: const [],
       );
 
   void _validate() {
@@ -122,6 +134,12 @@ class Config {
       }
       if (value.import != null && (value.import!.trim().isEmpty)) {
         issues.add('scalar "$key" import must be non-empty when provided');
+      }
+    }
+
+    for (final plugin in pluginPaths) {
+      if (!File(plugin).existsSync()) {
+        issues.add('plugin not found at $plugin');
       }
     }
 

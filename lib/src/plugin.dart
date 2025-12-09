@@ -1,17 +1,31 @@
 import 'package:code_builder/code_builder.dart';
 import 'ir.dart';
 
+/// Semantic version of the IR surface passed to plugins.
+/// Bump when breaking changes are made to [DocumentIr] or related models.
+const irSchemaVersion = '1.0.0';
+
 /// Extension point for custom behavior in the generation pipeline.
+/// Plugins may:
+/// - read IR to make decisions
+/// - add/modify imports and declarations on emitted libraries via [onLibrary]
+/// - emit extra files by writing to [RenderContext.outputRoot] in hooks
+/// Plugins must NOT mutate IR contents (e.g., add/remove fields) to ensure
+/// stability for other plugins.
 abstract class GeneratorPlugin {
   /// Invoked right after IR is built, before any rendering.
-  void onDocument(DocumentIr ir, RenderContext context) {}
+  /// Safe for analytics or preparing additional artifacts; avoid mutating IR.
+  void onDocument(CodegenContext ctx) {}
 
   /// Invoked before a library is emitted for a document; plugins may mutate the builder.
-  void onLibrary(
-      LibraryBuilder library, DocumentIr ir, RenderContext context) {}
+  /// Allowed: add imports, add declarations, annotate code, register parts.
+  /// Avoid removing user-generated code or changing existing declarations.
+  void onLibrary(LibraryBuilder library, CodegenContext ctx) {}
 
   /// Invoked after all files for a document are written.
-  void onRenderComplete(DocumentIr ir, RenderContext context) {}
+  /// Use this to emit extra files into [CodegenContext.outputRoot] or
+  /// perform cleanup. Do not assume synchronous ordering between documents.
+  void onRenderComplete(CodegenContext ctx) {}
 }
 
 /// Context passed to plugins with useful metadata about the render operation.
@@ -24,3 +38,25 @@ class RenderContext {
   /// The configuration used for generation.
   final dynamic config;
 }
+
+/// Aggregated context passed to plugins for convenience.
+class CodegenContext {
+  CodegenContext({
+    required this.ir,
+    required this.render,
+    required this.config,
+  });
+
+  final DocumentIr ir;
+  final RenderContext render;
+  final dynamic config;
+}
+
+/// Example plugin that injects a comment into every generated library:
+///
+/// class BannerPlugin implements GeneratorPlugin {
+///   @override
+///   void onLibrary(LibraryBuilder library, DocumentIr ir, RenderContext ctx) {
+///     library.body.insert(0, Code('// Generated with love by BannerPlugin'));
+///   }
+/// }

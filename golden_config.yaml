@@ -1,0 +1,7 @@
+schema: test/spec_suite/golden/schema.graphql
+input_dir: test/spec_suite/golden
+output_dir: generated
+nullable_mode: required
+name_prefix: Gql
+compress_queries: false
+emit_helpers: true

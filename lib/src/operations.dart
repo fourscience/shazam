@@ -25,12 +25,15 @@ class OperationsLoader {
 
   Future<List<String>> _collectFiles() async {
     final result = <String>[];
+  
     final dir = Directory(inputDir);
     if (!dir.existsSync()) {
       return result;
     }
     await for (final entity in dir.list(recursive: true)) {
-      if (entity is File && p.extension(entity.path) == '.graphql') {
+      if (entity is File &&
+          p.extension(entity.path) == '.graphql' &&
+          p.normalize(p.dirname(entity.path)) == p.normalize(inputDir)) {
         result.add(entity.path);
       }
     }

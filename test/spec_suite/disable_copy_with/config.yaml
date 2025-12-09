@@ -1,0 +1,15 @@
+schema: document.graphql
+input_dir: ./
+output_dir: __generated__
+nullable_mode: required
+name_prefix: Gql
+compress_queries: false
+emit_helpers: true
+scalars:
+  DateTime:
+    symbol: Date
+    import: package:shazam/spec_suite/scalars/date_time.dart
+  Raw:
+    symbol: String
+  Age:
+    symbol: int

@@ -19,8 +19,14 @@
       ],
       "devDependencies": [
         "lints",
-        "test"
+        "test",
+        "very_good_analysis"
       ]
+    },
+    {
+      "name": "very_good_analysis",
+      "version": "9.0.0",
+      "dependencies": []
     },
     {
       "name": "test",

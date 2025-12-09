@@ -51,16 +51,12 @@ class OperationEmitter {
 
   String operationConst(String name, OperationDefinitionNode node) {
     final source = printNode(node);
-    final prefix = () {
-      switch (node.type) {
-        case OperationType.query:
-          return 'query';
-        case OperationType.mutation:
-          return 'mutate';
-        case OperationType.subscription:
-          return 'subscribe';
-      }
-    }();
+    final prefix = switch (node.type) {
+      OperationType.query => 'query',
+      OperationType.mutation => 'mutate',
+      OperationType.subscription => 'subscribe'
+    };
+
     final opName =
         '$prefix${config.namePrefix}${name.isEmpty ? '' : name.toPascalCase()}';
     final withName = _injectOperationName(source, opName);
@@ -73,24 +69,38 @@ class OperationEmitter {
     return "const ${config.namePrefix}${name}Operation = r'''$withName''';";
   }
 
-  String operationRequest(String name, String? variableRecord) {
+  String operationRequest(
+      String name, String? variableRecord, Map<String, dynamic> defaults) {
     final opConst = '${config.namePrefix}${name}Operation';
     final builderName = 'build${config.namePrefix}${name}Request';
+    final hasDefaults = defaults.isNotEmpty;
+    final defaultsLiteral =
+        hasDefaults ? jsonEncode(defaults) : '<String, dynamic>{}';
     if (variableRecord == null) {
       return '''
-Map<String, dynamic> $builderName({Map<String, dynamic>? variables}) {
+Map<String, dynamic> $builderName(
+    {Map<String, dynamic>? variables, String? operationName}) {
+  final _vars = <String, dynamic>${hasDefaults ? defaultsLiteral : '{}'};
+  if (variables != null) _vars.addAll(variables);
   return {
     'query': $opConst,
-    if (variables != null) 'variables': variables,
+    if (operationName != null) 'operationName': operationName,
+    if (_vars.isNotEmpty) 'variables': _vars,
   };
 }
 ''';
     }
     return '''
-Map<String, dynamic> $builderName({$variableRecord? variables}) {
+Map<String, dynamic> $builderName(
+    {$variableRecord? variables, String? operationName}) {
+  final _vars = <String, dynamic>${hasDefaults ? defaultsLiteral : '{}'};
+  if (variables != null) {
+    _vars.addAll(serialize$variableRecord(variables));
+  }
   return {
     'query': $opConst,
-    if (variables != null) 'variables': serialize$variableRecord(variables),
+    if (operationName != null) 'operationName': operationName,
+    if (_vars.isNotEmpty) 'variables': _vars,
   };
 }
 ''';
@@ -100,9 +110,7 @@ Map<String, dynamic> $builderName({$variableRecord? variables}) {
     final parseName = 'parse${config.namePrefix}${op.name}Response';
     final recordType = op.record.name;
     return '''
-$recordType $parseName(Map<String, dynamic> json) {
-  return deserialize$recordType(json);
-}
+$recordType $parseName(Map<String, dynamic> json) => deserialize$recordType(json);
 ''';
   }
 

@@ -9,7 +9,7 @@ void main() {
     final tempDir = await Directory.systemTemp.createTemp('shazam_golden_');
     final workdir = Directory(p.join(tempDir.path, 'spec_suite'))
       ..createSync(recursive: true);
-    await _copyTree('spec_suite', workdir.path);
+    await _copyTree('test/spec_suite/golden', workdir.path);
 
     addTearDown(() async {
       if (tempDir.existsSync()) {
@@ -29,13 +29,14 @@ void main() {
       scalarMapping: const {},
       configPath: 'config.yaml',
       keywordReplacements: const {},
+      pluginPaths: const [],
     );
 
     final generator = Generator(config);
     await generator.build();
 
     final actualFiles = _collectFiles(outputRoot);
-    final expectedFiles = _collectFiles('spec_suite/generated');
+    final expectedFiles = _collectFiles('test/spec_suite/golden/generated');
 
     expect(actualFiles.keys, unorderedEquals(expectedFiles.keys));
     for (final path in expectedFiles.keys) {
@@ -44,7 +45,8 @@ void main() {
     }
 
     final schemaPath = p.join(workdir.path, 'schema.dart');
-    final expectedSchema = File('spec_suite/schema.dart').readAsStringSync();
+    final expectedSchema =
+        File('test/spec_suite/golden/schema.dart').readAsStringSync();
     expect(File(schemaPath).readAsStringSync(), expectedSchema);
   });
 }

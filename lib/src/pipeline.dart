@@ -6,12 +6,12 @@ import 'builders/document_ir_builder.dart';
 import 'builders/ir_context.dart';
 import 'config.dart';
 import 'ir.dart';
-import 'log.dart';
 import 'operations.dart';
 import 'plugin.dart';
 import 'renderer.dart';
 import 'schema.dart';
 import 'schema_index.dart';
+import 'schema_docs.dart';
 
 class SchemaContext {
   SchemaContext({required this.schema, required this.index});
@@ -55,7 +55,7 @@ class CodegenPipeline {
     for (final src in sources) {
       defs.addAll(src.document.definitions);
     }
-    final basePath = sources.first.path;
+    final basePath = config.schemaPath;
     final mergedDoc = DocumentNode(definitions: defs);
     return DocumentSource(path: basePath, document: mergedDoc);
   }
@@ -66,6 +66,7 @@ class CodegenPipeline {
       schema: schemaCtx.schema,
       schemaIndex: schemaCtx.index,
       cache: cache,
+      docs: SchemaDocHelper(schemaCtx.schema),
     );
     return DocumentIrBuilder(context).build(merged);
   }

@@ -296,6 +296,12 @@
       "languageVersion": "3.5"
     },
     {
+      "name": "very_good_analysis",
+      "rootUri": "file:///Users/dalestales/.pub-cache/hosted/pub.dev/very_good_analysis-9.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.8"
+    },
+    {
       "name": "vm_service",
       "rootUri": "file:///Users/dalestales/.pub-cache/hosted/pub.dev/vm_service-15.0.2",
       "packageUri": "lib/",

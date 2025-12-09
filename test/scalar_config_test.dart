@@ -60,6 +60,7 @@ mutation SetTime(\$at: DateTime!) {
       },
       configPath: 'config.yaml',
       keywordReplacements: const {},
+      pluginPaths: const [],
     );
 
     final generator = Generator(config);

@@ -50,6 +50,12 @@ class DocumentIrBuilder {
         .map((e) => EnumIr(
               name: _pref(e.name.value),
               values: e.values.map((v) => v.name.value).toList(),
+              description: context.docs.typeDescription(e.name.value),
+              valueDescriptions: {
+                for (final v in e.values)
+                  v.name.value:
+                      context.docs.enumValueDescription(e.name.value, v.name.value)
+              },
             ))
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
@@ -92,6 +98,7 @@ class DocumentIrBuilder {
           record.fields[entry.key] = FieldIr(
             name: entry.value.name,
             jsonKey: entry.value.jsonKey,
+            sourceName: entry.value.sourceName,
             type: wrappedType,
             nullable: entry.value.nullable,
             thunkTarget: entry.value.type,
@@ -114,7 +121,7 @@ class DocumentIrBuilder {
         return;
       }
       visiting.add(node);
-      for (final next in edges[node] ?? const {}) {
+      for (final next in edges[node] ?? const <String>{}) {
         dfs(next);
       }
       visiting.removeLast();

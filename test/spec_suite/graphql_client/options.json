@@ -1,0 +1,6 @@
+{
+  "clients": [
+    "graphql"
+  ],
+  "addTypename": false
+}

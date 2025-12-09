@@ -12,7 +12,7 @@ class ShazamWatcher {
   final Config config;
   final FutureOr<void> Function() onChange;
 
-  StreamSubscription? _sub;
+  StreamSubscription<WatchEvent>? _sub;
 
   Future<void> start() async {
     final targets = <String>{

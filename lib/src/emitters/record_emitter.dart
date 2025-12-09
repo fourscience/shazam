@@ -1,15 +1,17 @@
 import 'package:code_builder/code_builder.dart';
 
-import '../config.dart';
 import '../ir.dart';
 import '../name_type_helpers.dart';
 import 'serializer_emitter.dart';
+import '../alias_helper.dart';
 
 class RecordEmitter {
-  RecordEmitter(this.typeHelper, this.serializer);
+  RecordEmitter(this.typeHelper, this.serializer)
+      : aliasHelper = const AliasHelper();
 
   final TypeHelper typeHelper;
   final SerializerEmitter serializer;
+  final AliasHelper aliasHelper;
 
   List<Spec> emitRecord(
       RecordIr record, Set<String> recordNames, Set<String> enumNames) {
@@ -21,8 +23,15 @@ class RecordEmitter {
     }
 
     final specs = <Spec>[];
-    final typedefBuf = StringBuffer()..writeln('typedef ${record.name} = ({');
+    final typedefBuf = StringBuffer();
+    if (record.description != null && record.description!.isNotEmpty) {
+      typedefBuf.writeln('/// ${record.description}');
+    }
+    typedefBuf.writeln('typedef ${record.name} = ({');
     for (final f in fields) {
+      if (f.description != null && f.description!.isNotEmpty) {
+        typedefBuf.writeln('  /// ${f.description}');
+      }
       typedefBuf.writeln('  ${f.type} ${f.name},');
     }
     typedefBuf.writeln('});');
@@ -38,7 +47,7 @@ class RecordEmitter {
       final bodyBuf = StringBuffer()..writeln('return (');
       for (final f in fields) {
         final expr = serializer.deserializeForType(
-            f.type, "json['${f.jsonKey}']", recordNames, enumNames,
+            f.type, aliasHelper.jsonAccess(f), recordNames, enumNames,
             thunkTarget: f.thunkTarget);
         bodyBuf.writeln('  ${f.name}: $expr,');
       }
@@ -60,7 +69,12 @@ class RecordEmitter {
           final expr = serializer.serializeForType(
               f.type, 'data.${f.name}', recordNames, enumNames,
               thunkTarget: f.thunkTarget);
-          bodyBuf.writeln("  '${f.jsonKey}': $expr,");
+          if (record.isInput && f.defaultValue != null) {
+            bodyBuf.writeln(
+                "  if (data.${f.name} != null) '${f.jsonKey}': $expr,");
+          } else {
+            bodyBuf.writeln("  '${f.jsonKey}': $expr,");
+          }
         }
         bodyBuf.writeln('};');
         b.body = Code(bodyBuf.toString());
@@ -150,7 +164,11 @@ class RecordEmitter {
       Set<String> recordNames, Set<String> enumNames) {
     final specs = <Spec>[];
 
-    final classBuf = StringBuffer()
+    final classBuf = StringBuffer();
+    if (record.description != null && record.description!.isNotEmpty) {
+      classBuf.writeln('/// ${record.description}');
+    }
+    classBuf
       ..writeln('class ${record.name} {')
       ..writeln('  const ${record.name}({');
     for (final f in fields) {
@@ -158,6 +176,9 @@ class RecordEmitter {
     }
     classBuf.writeln('  });');
     for (final f in fields) {
+      if (f.description != null && f.description!.isNotEmpty) {
+        classBuf.writeln('  /// ${f.description}');
+      }
       classBuf.writeln('  final ${f.type} ${f.name};');
     }
     classBuf.writeln('}');
@@ -169,7 +190,7 @@ class RecordEmitter {
       ..writeln('  return ${record.name}(');
     for (final f in fields) {
       final expr = serializer.deserializeForType(
-          f.type, "json['${f.jsonKey}']", recordNames, enumNames,
+          f.type, aliasHelper.jsonAccess(f), recordNames, enumNames,
           thunkTarget: f.thunkTarget);
       deserBuf.writeln('    ${f.name}: $expr,');
     }
@@ -184,7 +205,12 @@ class RecordEmitter {
     for (final f in fields.where((f) => f.thunkTarget == null)) {
       final expr = serializer.serializeForType(
           f.type, 'data.${f.name}', recordNames, enumNames);
-      serBuf.writeln("    '${f.jsonKey}': $expr,");
+      if (record.isInput && f.defaultValue != null) {
+        serBuf
+            .writeln("    if (data.${f.name} != null) '${f.jsonKey}': $expr,");
+      } else {
+        serBuf.writeln("    '${f.jsonKey}': $expr,");
+      }
     }
     serBuf.writeln('  };');
     for (final f in fields.where((f) => f.thunkTarget != null)) {
@@ -202,4 +228,5 @@ class RecordEmitter {
 
     return specs;
   }
+
 }

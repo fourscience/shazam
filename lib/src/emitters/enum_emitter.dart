@@ -7,8 +7,12 @@ class EnumEmitter {
     return Enum((b) {
       b
         ..name = enm.name
-        ..values.addAll(
-            enm.values.map((v) => EnumValue((ev) => ev..name = _enumCase(v))));
+        ..docs.addAll(_docs(enm.description))
+        ..values.addAll(enm.values.map((v) => EnumValue((ev) {
+              ev
+                ..name = _enumCase(v)
+                ..docs.addAll(_docs(enm.valueDescriptions[v]));
+            })));
     });
   }
 
@@ -26,4 +30,7 @@ class EnumEmitter {
         ? 'value'
         : camel[0].toLowerCase() + camel.substring(1);
   }
+
+  List<String> _docs(String? description) =>
+      (description == null || description.isEmpty) ? [] : [' $description'];
 }
