@@ -123,7 +123,7 @@ class OperationBuilder {
     final base = ref.name!;
     final scalar = context.config.scalarMapping[base];
     if (scalar != null) {
-      final target = scalar.target ?? scalar.name!;
+      final target = scalar.symbol;
       return ref.isNonNull ? target : '$target?';
     }
     switch (base) {

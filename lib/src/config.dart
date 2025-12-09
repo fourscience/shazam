@@ -35,16 +35,8 @@ class Config {
     final scalarSection = (doc['scalars'] as YamlMap?) ?? YamlMap();
     final scalars = <String, ScalarConfig>{};
     for (final entry in scalarSection.entries) {
-      if (entry.value is String) {
-        scalars[entry.key as String] =
-            ScalarConfig.inline(entry.value as String);
-      } else if (entry.value is YamlMap) {
-        final map = entry.value as YamlMap;
-        scalars[entry.key as String] = ScalarConfig.imported(
-          name: map['name'] as String,
-          path: map['path'] as String,
-        );
-      }
+      scalars[entry.key as String] =
+          ScalarConfig.fromYaml(entry.value, key: entry.key as String);
     }
 
     final nullableMode = _parseNullableMode(doc['nullable_mode'] as String?);
@@ -114,13 +106,12 @@ class Config {
             .add('scalar key "$key" is invalid (must be a GraphQL identifier)');
       }
       final value = entry.value;
-      if (value.isImported) {
-        if ((value.name ?? '').isEmpty || (value.path ?? '').isEmpty) {
-          issues
-              .add('scalar "$key" imported mapping must include name and path');
-        }
-      } else if ((value.target ?? '').isEmpty) {
-        issues.add('scalar "$key" inline mapping must be non-empty');
+      if (!RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$').hasMatch(value.symbol)) {
+        issues.add(
+            'scalar "$key" symbol "${value.symbol}" is invalid (must be a Dart identifier)');
+      }
+      if (value.import != null && (value.import!.trim().isEmpty)) {
+        issues.add('scalar "$key" import must be non-empty when provided');
       }
     }
 
@@ -133,16 +124,23 @@ class Config {
 enum NullableMode { required, optional }
 
 class ScalarConfig {
-  ScalarConfig.inline(this.target)
-      : name = null,
-        path = null;
-  ScalarConfig.imported({required this.name, required this.path})
-      : target = null;
+  const ScalarConfig({required this.symbol, this.import});
 
-  final String? target; // simple mapping
-  final String? name;
-  final String? path;
+  factory ScalarConfig.fromYaml(dynamic value, {required String key}) {
+    if (value is String) {
+      return ScalarConfig(symbol: value);
+    }
+    if (value is YamlMap) {
+      final map = value;
+      final symbol = map['symbol'] as String?;
+      final import = (map['import'] ?? map['path']) as String?;
+      return ScalarConfig(symbol: symbol ?? '', import: import);
+    }
+    throw StateError('scalar "$key" must map to a string or map');
+  }
 
-  bool get isInline => target != null;
-  bool get isImported => name != null && path != null;
+  final String symbol;
+  final String? import;
+
+  bool get hasImport => import != null && import!.isNotEmpty;
 }

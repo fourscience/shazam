@@ -24,7 +24,8 @@ class InputBuilder {
     if (context.cache.records.containsKey(name)) {
       return context.cache.records[name]!;
     }
-    final record = RecordIr(name: name, fields: {}, isInput: true, variants: {});
+    final record =
+        RecordIr(name: name, fields: {}, isInput: true, variants: {});
     context.cache.records[name] = record;
 
     for (final field in input.fields) {
@@ -55,7 +56,7 @@ class InputBuilder {
     final base = ref.name!;
     final scalar = context.config.scalarMapping[base];
     if (scalar != null) {
-      final target = scalar.target ?? scalar.name!;
+      final target = scalar.symbol;
       return ref.isNonNull ? target : '$target?';
     }
     switch (base) {

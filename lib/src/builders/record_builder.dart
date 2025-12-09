@@ -89,18 +89,18 @@ class RecordBuilder {
             spec.fields.putIfAbsent(entry.key, () => entry.value);
           }
         } else if (_isUnionOrInterface(rootType)) {
-        final variantName = '${name}${_pascal(typeCondition)}';
-        final nested = build(
-            rootType: typeCondition,
-            selection: sel.selectionSet,
-            name: variantName,
-            owner: owner);
-        spec.variants.add(typeCondition);
-        spec.fields[_camel(typeCondition)] = FieldIr(
-          name: _camel(typeCondition),
-          jsonKey: _camel(typeCondition),
-          type: '${nested.name}?',
-          nullable: true,
+          final variantName = '${name}${_pascal(typeCondition)}';
+          final nested = build(
+              rootType: typeCondition,
+              selection: sel.selectionSet,
+              name: variantName,
+              owner: owner);
+          spec.variants.add(typeCondition);
+          spec.fields[_camel(typeCondition)] = FieldIr(
+            name: _camel(typeCondition),
+            jsonKey: _camel(typeCondition),
+            type: '${nested.name}?',
+            nullable: true,
           );
         }
       }
@@ -143,7 +143,7 @@ class RecordBuilder {
     final base = ref.name!;
     final scalar = context.config.scalarMapping[base];
     if (scalar != null) {
-      final target = scalar.target ?? scalar.name!;
+      final target = scalar.symbol;
       return ref.isNonNull ? target : '$target?';
     }
     switch (base) {
