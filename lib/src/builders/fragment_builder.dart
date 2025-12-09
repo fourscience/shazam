@@ -1,0 +1,89 @@
+import 'package:gql/ast.dart';
+
+import '../ir.dart';
+import '../operations.dart';
+import 'ir_context.dart';
+import 'record_builder.dart';
+
+/// Builds fragments and caches them for reuse.
+class FragmentBuilder {
+  FragmentBuilder(this.context, this.recordBuilder);
+
+  final IrBuildContext context;
+  final RecordBuilder recordBuilder;
+
+  final Map<String, FragmentIr> fragments = {};
+  final Map<String, FragmentDefinitionNode> fragmentDefinitions = {};
+
+  void indexDefinitions(DocumentSource source) {
+    for (final def in source.document.definitions) {
+      if (def is FragmentDefinitionNode) {
+        fragmentDefinitions[_pref(def.name.value)] = def;
+      }
+    }
+  }
+
+  FragmentIr build(String name) {
+    if (fragments.containsKey(name)) return fragments[name]!;
+    if (context.cache.fragments.containsKey(name)) {
+      fragments[name] = context.cache.fragments[name]!;
+      return fragments[name]!;
+    }
+    final def = fragmentDefinitions[name];
+    if (def == null) {
+      throw StateError('Fragment $name not found');
+    }
+    final deps = _collectDeps(def.selectionSet);
+    final record = recordBuilder.build(
+      rootType: def.typeCondition.on.name.value,
+      selection: def.selectionSet,
+      name: name,
+      owner: name,
+    );
+    for (final dep in deps) {
+      final depFrag = build(dep);
+      for (final entry in depFrag.record.fields.entries) {
+        record.fields.putIfAbsent(entry.key, () => entry.value);
+      }
+    }
+    // Explicitly stitch in fields from fragment spreads within this fragment.
+    for (final sel in def.selectionSet.selections) {
+      if (sel is FragmentSpreadNode) {
+        final spread = build(_pref(sel.name.value));
+        for (final entry in spread.record.fields.entries) {
+          record.fields.putIfAbsent(entry.key, () => entry.value);
+        }
+      }
+    }
+    final frag =
+        FragmentIr(name: name, node: def, record: record, dependencies: deps);
+    fragments[name] = frag;
+    context.cache.fragments[name] = frag;
+    return frag;
+  }
+
+  String _pref(String name) => '${context.config.namePrefix}${_pascal(name)}';
+
+  String _pascal(String value) {
+    if (value.isEmpty) return value;
+    return value
+        .split(RegExp(r'[_\s]+'))
+        .map((part) =>
+            part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1))
+        .join();
+  }
+
+  Set<String> _collectDeps(SelectionSetNode set) {
+    final deps = <String>{};
+    for (final sel in set.selections) {
+      if (sel is FragmentSpreadNode) {
+        deps.add(_pref(sel.name.value));
+      } else if (sel is InlineFragmentNode) {
+        deps.addAll(_collectDeps(sel.selectionSet));
+      } else if (sel is FieldNode && sel.selectionSet != null) {
+        deps.addAll(_collectDeps(sel.selectionSet!));
+      }
+    }
+    return deps;
+  }
+}

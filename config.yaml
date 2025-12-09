@@ -1,0 +1,8 @@
+schema: spec_suite/schema.graphql
+input_dir: spec_suite
+output_dir: generated
+nullable_mode: required
+name_prefix: Gql
+compress_queries: false
+emit_helpers: true
+scalars: {}
