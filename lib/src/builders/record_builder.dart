@@ -33,7 +33,8 @@ class RecordBuilder {
     for (final sel in selection.selections) {
       if (sel is FieldNode) {
         final jsonKey = sel.alias?.value ?? sel.name.value;
-        final fieldName = sel.name.value == '__typename' ? 'typeName' : jsonKey;
+        final rawName = sel.name.value == '__typename' ? 'typeName' : jsonKey;
+        final fieldName = _sanitize(rawName);
         final fieldDef = parentFields
             ?.firstWhereOrNull((f) => f.name.value == sel.name.value);
         if (fieldDef == null) {
@@ -42,6 +43,7 @@ class RecordBuilder {
             jsonKey: jsonKey,
             type: 'dynamic',
             nullable: true,
+            thunkTarget: null,
           );
           continue;
         }
@@ -54,6 +56,7 @@ class RecordBuilder {
             jsonKey: jsonKey,
             type: dartType,
             nullable: !typeRef.isNonNull,
+            thunkTarget: null,
           );
         } else {
           final nestedName = '${name}${_pascal(fieldName)}';
@@ -70,6 +73,7 @@ class RecordBuilder {
             jsonKey: jsonKey,
             type: dartType,
             nullable: !typeRef.isNonNull,
+            thunkTarget: null,
           );
         }
       } else if (sel is FragmentSpreadNode) {
@@ -96,11 +100,13 @@ class RecordBuilder {
               name: variantName,
               owner: owner);
           spec.variants.add(typeCondition);
-          spec.fields[_camel(typeCondition)] = FieldIr(
-            name: _camel(typeCondition),
+          final variantField = _sanitize(_camel(typeCondition));
+          spec.fields[variantField] = FieldIr(
+            name: variantField,
             jsonKey: _camel(typeCondition),
             type: '${nested.name}?',
             nullable: true,
+            thunkTarget: null,
           );
         }
       }
@@ -114,6 +120,7 @@ class RecordBuilder {
         jsonKey: '__typename',
         type: 'String',
         nullable: false,
+        thunkTarget: null,
       );
     }
 
@@ -194,6 +201,8 @@ class RecordBuilder {
     final p = _pascal(value);
     return p.isEmpty ? p : p[0].toLowerCase() + p.substring(1);
   }
+
+  String _sanitize(String name) => context.config.sanitizeIdentifier(name);
 
   bool _isUnionOrInterface(String typeName) =>
       context.schemaIndex.isUnionOrInterface(typeName);

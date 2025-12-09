@@ -6,7 +6,7 @@ import '../spec_suite/generated/operations/CreatePost.dart';
 import '../spec_suite/generated/operations/GetUserAndSearch.dart';
 import '../spec_suite/generated/operations/OnActivity.dart';
 import '../spec_suite/generated/operations/ToggleLike.dart';
-import '../spec_suite/generated/types.dart';
+import '../spec_suite/schema.dart';
 
 void main() {
   group('scalars & enums', () {
@@ -29,7 +29,8 @@ void main() {
 
   group('inputs & variables', () {
     test('input objects serialize with nested scalars/enums', () {
-      final metadata = (isPublished: true, rating: 3.2);
+      final metadata =
+          GqlMetadataInput(isPublished: true, rating: 3.2, not: null);
       final input = (
         title: 'Hi',
         content: 'Body',
@@ -73,7 +74,8 @@ void main() {
       final post = deserializeGqlPostPreview(_postPreview(
           id: 'p1',
           title: 'Preview',
-          author: _userPreview(id: 'u1', name: 'Author'))..['name'] = 'Preview');
+          author: _userPreview(id: 'u1', name: 'Author'))
+        ..['name'] = 'Preview');
       expect(isTypeOf(post, 'Node'), isTrue);
     });
 
@@ -123,7 +125,8 @@ void main() {
       final parsed = deserializeGqlPostPreview(_postPreview(
           id: 'p1',
           title: 'Preview',
-          author: _userPreview(id: 'u1', name: 'Author'))..['name'] = 'Preview');
+          author: _userPreview(id: 'u1', name: 'Author'))
+        ..['name'] = 'Preview');
       expect(parsed.typeName, 'Post');
     });
   });
@@ -176,7 +179,8 @@ Map<String, dynamic> _searchJson() => {
       'search': [
         {
           '__typename': 'User',
-          'user': _userPreview(id: 'user-10', name: 'Search User', role: 'USER'),
+          'user':
+              _userPreview(id: 'user-10', name: 'Search User', role: 'USER'),
         }
       ],
       'posts': [
@@ -221,21 +225,21 @@ Map<String, dynamic> _activityJson() => {
       'activity': {
         '__typename': 'Activity',
         'post': _postPreview(
-        id: 'post-activity',
-        title: 'Activity Post',
-        author: _userPreview(id: 'user-activity', name: 'Post Author'),
-      ),
-      'comment': _commentWithAuthor(
-        id: 'comment-activity',
-        authorName: 'Comment Author',
-      ),
+          id: 'post-activity',
+          title: 'Activity Post',
+          author: _userPreview(id: 'user-activity', name: 'Post Author'),
+        ),
+        'comment': _commentWithAuthor(
+          id: 'comment-activity',
+          authorName: 'Comment Author',
+        ),
+        'name': '',
+        'role': null,
+      },
+      'author': _userPreview(id: 'user-activity', name: 'Post Author'),
+      'body': '',
+      'id': 'ignored',
       'name': '',
-      'role': null,
-    },
-    'author': _userPreview(id: 'user-activity', name: 'Post Author'),
-    'body': '',
-    'id': 'ignored',
-    'name': '',
       'replies': <Map<String, dynamic>>[],
       'role': null,
       'title': '',

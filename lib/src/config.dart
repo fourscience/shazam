@@ -14,6 +14,7 @@ class Config {
     required this.schemaPath,
     required this.scalarMapping,
     required this.configPath,
+    required this.keywordReplacements,
   });
 
   final String outputDir;
@@ -25,6 +26,7 @@ class Config {
   final bool compressQueries;
   final bool emitHelpers;
   final Map<String, ScalarConfig> scalarMapping;
+  final Map<String, String> keywordReplacements;
 
   static Future<Config> load(File file) async {
     if (!file.existsSync()) {
@@ -37,6 +39,12 @@ class Config {
     for (final entry in scalarSection.entries) {
       scalars[entry.key as String] =
           ScalarConfig.fromYaml(entry.value, key: entry.key as String);
+    }
+    final keywordReplacements = <String, String>{};
+    final keywordSection =
+        (doc['keyword_replacements'] as YamlMap?) ?? YamlMap();
+    for (final entry in keywordSection.entries) {
+      keywordReplacements[entry.key as String] = entry.value as String;
     }
 
     final nullableMode = _parseNullableMode(doc['nullable_mode'] as String?);
@@ -54,6 +62,7 @@ class Config {
       schemaPath: p.normalize(p.join(configDir, schemaPath)),
       scalarMapping: scalars,
       configPath: file.path,
+      keywordReplacements: keywordReplacements,
     );
     cfg._validate();
     return cfg;
@@ -79,6 +88,7 @@ class Config {
         schemaPath: 'schema.graphql',
         scalarMapping: {},
         configPath: 'config.yaml',
+        keywordReplacements: const {},
       );
 
   void _validate() {
@@ -118,6 +128,82 @@ class Config {
     if (issues.isNotEmpty) {
       throw StateError('Config validation failed:\n- ${issues.join('\n- ')}');
     }
+  }
+
+  static const _dartKeywords = <String>{
+    'abstract',
+    'as',
+    'assert',
+    'async',
+    'await',
+    'break',
+    'case',
+    'catch',
+    'class',
+    'const',
+    'continue',
+    'covariant',
+    'default',
+    'deferred',
+    'do',
+    'dynamic',
+    'else',
+    'enum',
+    'export',
+    'extends',
+    'extension',
+    'external',
+    'factory',
+    'false',
+    'final',
+    'finally',
+    'for',
+    'Function',
+    'get',
+    'hide',
+    'if',
+    'implements',
+    'import',
+    'in',
+    'interface',
+    'is',
+    'late',
+    'library',
+    'mixin',
+    'new',
+    'null',
+    'on',
+    'operator',
+    'part',
+    'rethrow',
+    'return',
+    'set',
+    'show',
+    'static',
+    'super',
+    'switch',
+    'sync',
+    'this',
+    'throw',
+    'true',
+    'try',
+    'typedef',
+    'var',
+    'void',
+    'while',
+    'with',
+    'yield',
+  };
+
+  String sanitizeIdentifier(String name) {
+    final replacement = keywordReplacements[name];
+    if (replacement != null && replacement.isNotEmpty) return replacement;
+    if (_dartKeywords.contains(name)) {
+      if (name.isEmpty) return 'r';
+      final pascal = name[0].toUpperCase() + name.substring(1);
+      return 'r$pascal';
+    }
+    return name;
   }
 }
 

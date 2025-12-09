@@ -1,4 +1,4 @@
-import '../types.dart';
+import '../../schema.dart';
 import '../fragments/GqlPostPreview.dart';
 import '../fragments/GqlCommentWithAuthor.dart';
 import '../fragments/GqlPostPreview.dart';
@@ -97,10 +97,10 @@ extension GqlOnActivityActivityMatcher on GqlOnActivityActivity {
     T Function()? orElse,
   }) {
     if (post != null && this.post != null) {
-      return post!(this.post!);
+      return post(this.post!);
     }
     if (comment != null && this.comment != null) {
-      return comment!(this.comment!);
+      return comment(this.comment!);
     }
     return orElse?.call();
   }

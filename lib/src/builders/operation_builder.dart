@@ -99,11 +99,13 @@ class OperationBuilder {
     for (final v in def.variableDefinitions) {
       final typeRef = TypeRef.fromNode(v.type);
       final dartType = _dartTypeFor(typeRef);
-      record.fields[v.variable.name.value] = FieldIr(
-        name: v.variable.name.value,
+      final fieldName = _sanitize(v.variable.name.value);
+      record.fields[fieldName] = FieldIr(
+        name: fieldName,
         jsonKey: v.variable.name.value,
         type: dartType,
         nullable: !typeRef.isNonNull,
+        thunkTarget: null,
       );
     }
     variableRecords.add(record);
@@ -156,4 +158,6 @@ class OperationBuilder {
         : gqlName;
     return '${context.config.namePrefix}${_pascal(trimmed)}Input';
   }
+
+  String _sanitize(String name) => context.config.sanitizeIdentifier(name);
 }

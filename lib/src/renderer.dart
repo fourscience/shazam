@@ -23,6 +23,8 @@ class CodeRenderer implements Renderer {
   CodeRenderer(this.config);
 
   final Config config;
+  late final String _schemaLibPath =
+      p.normalize(p.join(p.dirname(config.schemaPath), 'schema.dart'));
 
   @override
   Future<void> render(
@@ -64,28 +66,26 @@ class CodeRenderer implements Renderer {
     final fragmentRecordOwners = {
       for (final r in fragmentRecords) r.name: r.owner
     };
-
-    final typesBuilder = LibraryBuilder()
-      ..directives.addAll(_importsForRecords(otherRecords, fragmentRecordOwners,
-          prefix: 'fragments/'))
+    final schemaBuilder = LibraryBuilder()
       ..directives
           .addAll(_scalarImportsForRecords(otherRecords, scalarBySymbol))
-      ..body.add(Code('// Generated types\n'));
+      ..body.add(Code('// Generated schema types\n'));
     for (final enm in ir.enums) {
-      typesBuilder.body.add(_emitEnum(enm));
+      schemaBuilder.body.add(_emitEnum(enm));
     }
     for (final record in otherRecords) {
-      typesBuilder.body
+      schemaBuilder.body
           .addAll(_emitRecord(record, recordNames, enumNames, scalarBySymbol));
     }
-    await _writeLibrary(p.join(outRoot, 'types.dart'), typesBuilder.build());
+    await _writeLibrary(_schemaLibPath, schemaBuilder.build());
 
     for (final op in ir.operations) {
       final opOwned = opRecords[op.name] ?? const [];
       final builder = LibraryBuilder()
         ..directives.addAll([
           if (config.compressQueries) Directive.import('../helpers.dart'),
-          Directive.import('../types.dart'),
+          Directive.import(_relativeSchemaImport(
+              p.join(operationsDir.path, '${op.name}.dart'))),
           ..._importsForRecords(opOwned, fragmentRecordOwners,
               prefix: '../fragments/'),
           ...op.fragments.map((f) => Directive.import('../fragments/$f.dart')),
@@ -111,7 +111,8 @@ class CodeRenderer implements Renderer {
       final builder = LibraryBuilder()
         ..directives.addAll(
             _fragmentImports(frag, fragmentRecords, fragmentRecordOwners))
-        ..directives.add(Directive.import('../types.dart'))
+        ..directives.add(Directive.import(_relativeSchemaImport(
+            p.join(fragmentsDir.path, '${frag.name}.dart'))))
         ..directives.addAll(_scalarImportsForRecords(
             fragmentRecords.where((r) => r.owner == frag.name).toList(),
             scalarBySymbol))
@@ -152,7 +153,8 @@ class CodeRenderer implements Renderer {
       indexBuilder.body.add(Code("export 'fragments/${frag.name}.dart';"));
     }
     indexBuilder.body.add(Code("export 'helpers.dart';"));
-    indexBuilder.body.add(Code("export 'types.dart';"));
+    indexBuilder.body
+        .add(Code("export '${p.relative(_schemaLibPath, from: outRoot)}';"));
     await _writeLibrary(p.join(outRoot, 'index.dart'), indexBuilder.build());
     for (final plugin in plugins) {
       plugin.onRenderComplete(ir, context);
@@ -164,6 +166,12 @@ class CodeRenderer implements Renderer {
       Set<String> enumNames, Map<String, ScalarConfig> scalarTypes) {
     final fields = record.fields.values.toList()
       ..sort((a, b) => a.name.compareTo(b.name));
+
+    final hasThunk = record.isInput && fields.any((f) => f.thunkTarget != null);
+    if (hasThunk) {
+      return _emitRecursiveInput(
+          record, fields, recordNames, enumNames, scalarTypes);
+    }
 
     final specs = <Spec>[];
     final typedefBuf = StringBuffer()..writeln('typedef ${record.name} = ({');
@@ -182,8 +190,9 @@ class CodeRenderer implements Renderer {
           ..type = refer('Map<String, dynamic>')));
       final bodyBuf = StringBuffer()..writeln('return (');
       for (final f in fields) {
-        final expr = _deserializeForType(f.type, "json['${f.jsonKey}']",
-            recordNames, enumNames, scalarTypes);
+        final expr = _deserializeForType(
+            f.type, "json['${f.jsonKey}']", recordNames, enumNames, scalarTypes,
+            thunkTarget: f.thunkTarget);
         bodyBuf.writeln('  ${f.name}: $expr,');
       }
       bodyBuf.writeln(');');
@@ -202,8 +211,13 @@ class CodeRenderer implements Renderer {
         final bodyBuf = StringBuffer()..writeln('return {');
         for (final f in fields) {
           final expr = _serializeForType(
-              f.type, 'data.${f.name}', recordNames, enumNames, scalarTypes);
-          bodyBuf.writeln("  '${f.jsonKey}': $expr,");
+              f.type, 'data.${f.name}', recordNames, enumNames, scalarTypes,
+              thunkTarget: f.thunkTarget);
+          if (f.thunkTarget != null) {
+            bodyBuf.writeln("  if (($expr) != null) '${f.jsonKey}': $expr,");
+          } else {
+            bodyBuf.writeln("  '${f.jsonKey}': $expr,");
+          }
         }
         bodyBuf.writeln('};');
         b.body = Code(bodyBuf.toString());
@@ -359,9 +373,19 @@ bool isTypeOf(dynamic record, String target) {
       String source,
       Set<String> recordNames,
       Set<String> enumNames,
-      Map<String, ScalarConfig> scalarTypes) {
+      Map<String, ScalarConfig> scalarTypes,
+      {String? thunkTarget}) {
     final nullable = type.endsWith('?');
     final core = nullable ? type.substring(0, type.length - 1) : type;
+
+    if (_isThunk(type)) {
+      final inner = thunkTarget ?? _unwrapThunk(type);
+      final deser = _deserializeForType(
+          inner, source, recordNames, enumNames, scalarTypes);
+      return nullable
+          ? '$source == null ? null : () => $deser'
+          : '() => $deser';
+    }
 
     if (core.startsWith('List<') && core.endsWith('>')) {
       final inner = core.substring(5, core.length - 1);
@@ -393,9 +417,17 @@ bool isTypeOf(dynamic record, String target) {
   }
 
   String _serializeForType(String type, String source, Set<String> recordNames,
-      Set<String> enumNames, Map<String, ScalarConfig> scalarTypes) {
+      Set<String> enumNames, Map<String, ScalarConfig> scalarTypes,
+      {String? thunkTarget}) {
     final nullable = type.endsWith('?');
     final core = nullable ? type.substring(0, type.length - 1) : type;
+
+    if (_isThunk(type)) {
+      final inner = thunkTarget ?? _unwrapThunk(type);
+      final invoked = nullable ? '$source?.call()' : '$source()';
+      return _serializeForType(
+          inner, invoked, recordNames, enumNames, scalarTypes);
+    }
 
     if (core.startsWith('List<') && core.endsWith('>')) {
       final inner = core.substring(5, core.length - 1);
@@ -406,7 +438,8 @@ bool isTypeOf(dynamic record, String target) {
     }
 
     if (recordNames.contains(core)) {
-      final nonNullSource = nullable ? '$source!' : source;
+      final nonNullSource =
+          nullable ? '($source! as $core)' : '($source as $core)';
       final ser = 'serialize$core($nonNullSource)';
       return nullable ? '$source == null ? null : $ser' : ser;
     }
@@ -537,12 +570,73 @@ bool isTypeOf(dynamic record, String target) {
         for (final entry in entries) {
           final fieldName = entry['field']!;
           body.writeln(
-              'if ($fieldName != null && this.$fieldName != null) { return $fieldName!(this.$fieldName!); }');
+              'if ($fieldName != null && this.$fieldName != null) { return $fieldName(this.$fieldName!); }');
         }
         body.writeln('return orElse?.call();');
         m.body = Code(body.toString());
       }));
     });
+  }
+
+  List<Spec> _emitRecursiveInput(
+      RecordIr record,
+      List<FieldIr> fields,
+      Set<String> recordNames,
+      Set<String> enumNames,
+      Map<String, ScalarConfig> scalarTypes) {
+    final specs = <Spec>[];
+
+    final classBuf = StringBuffer()
+      ..writeln('class ${record.name} {')
+      ..writeln('  const ${record.name}({');
+    for (final f in fields) {
+      classBuf.writeln('    this.${f.name},');
+    }
+    classBuf.writeln('  });');
+    for (final f in fields) {
+      classBuf.writeln('  final ${f.type} ${f.name};');
+    }
+    classBuf.writeln('}');
+    specs.add(Code(classBuf.toString()));
+
+    final deserBuf = StringBuffer()
+      ..writeln(
+          '${record.name} deserialize${record.name}(Map<String, dynamic> json) {')
+      ..writeln('  return ${record.name}(');
+    for (final f in fields) {
+      final expr = _deserializeForType(
+          f.type, "json['${f.jsonKey}']", recordNames, enumNames, scalarTypes,
+          thunkTarget: f.thunkTarget);
+      deserBuf.writeln('    ${f.name}: $expr,');
+    }
+    deserBuf.writeln('  );');
+    deserBuf.writeln('}');
+    specs.add(Code(deserBuf.toString()));
+
+    final serBuf = StringBuffer()
+      ..writeln(
+          'Map<String, dynamic> serialize${record.name}(${record.name} data) {')
+      ..writeln('  final _result = <String, dynamic>{');
+    for (final f in fields.where((f) => f.thunkTarget == null)) {
+      final expr = _serializeForType(
+          f.type, 'data.${f.name}', recordNames, enumNames, scalarTypes);
+      serBuf.writeln("    '${f.jsonKey}': $expr,");
+    }
+    serBuf.writeln('  };');
+    for (final f in fields.where((f) => f.thunkTarget != null)) {
+      final temp = '_${f.name}Value';
+      serBuf.writeln('  final $temp = data.${f.name}?.call();');
+      serBuf.writeln('  if ($temp != null) {');
+      final inner = _serializeForType(
+          f.thunkTarget!, temp, recordNames, enumNames, scalarTypes);
+      serBuf.writeln("    _result['${f.jsonKey}'] = $inner;");
+      serBuf.writeln('  }');
+    }
+    serBuf.writeln('  return _result;');
+    serBuf.writeln('}');
+    specs.add(Code(serBuf.toString()));
+
+    return specs;
   }
 
   Map<String, ScalarConfig> _scalarSymbolMap(Config config) {
@@ -565,6 +659,22 @@ bool isTypeOf(dynamic record, String target) {
       }
     }
     return imports.map((path) => Directive.import(path)).toList();
+  }
+
+  String _relativeSchemaImport(String fromFile) =>
+      p.relative(_schemaLibPath, from: p.dirname(fromFile));
+
+  bool _isThunk(String type) =>
+      type.endsWith(' Function()') || type.endsWith(' Function()?');
+
+  String _unwrapThunk(String type) {
+    if (type.endsWith(' Function()?')) {
+      return '${type.substring(0, type.length - ' Function()?'.length)}?';
+    }
+    if (type.endsWith(' Function()')) {
+      return type.substring(0, type.length - ' Function()'.length);
+    }
+    return type;
   }
 
   List<Directive> _fragmentImports(FragmentIr frag,
@@ -590,6 +700,12 @@ bool isTypeOf(dynamic record, String target) {
     var current = type;
     if (current.endsWith('?')) {
       current = current.substring(0, current.length - 1);
+    }
+    if (current.endsWith(' Function()')) {
+      current = current.substring(0, current.length - ' Function()'.length);
+    } else if (current.endsWith(' Function()?')) {
+      current =
+          current.substring(0, current.length - ' Function()?'.length) + '?';
     }
     while (current.startsWith('List<') && current.endsWith('>')) {
       current = current.substring(5, current.length - 1);

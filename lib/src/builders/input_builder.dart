@@ -32,10 +32,11 @@ class InputBuilder {
       final typeRef = TypeRef.fromNode(field.type);
       final dartType = _dartTypeFor(typeRef, selectionRecordName: null);
       record.fields[field.name.value] = FieldIr(
-        name: field.name.value,
+        name: _sanitize(field.name.value),
         jsonKey: field.name.value,
         type: dartType,
         nullable: !typeRef.isNonNull,
+        thunkTarget: null,
       );
     }
     return record;
@@ -101,4 +102,6 @@ class InputBuilder {
             part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1))
         .join();
   }
+
+  String _sanitize(String name) => context.config.sanitizeIdentifier(name);
 }

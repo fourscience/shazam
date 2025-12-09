@@ -52,6 +52,8 @@ type Metadata {
 input MetadataInput {
   isPublished: Boolean
   rating: Float
+  not: MetadataInput
+  in: [MetadataInput]
 }
 
 type Stats {

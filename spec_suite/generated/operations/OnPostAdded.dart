@@ -1,4 +1,4 @@
-import '../types.dart';
+import '../../schema.dart';
 import '../fragments/GqlPostPreview.dart';
 import '../fragments/GqlPostPreview.dart';
 

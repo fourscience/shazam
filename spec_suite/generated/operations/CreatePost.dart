@@ -1,4 +1,4 @@
-import '../types.dart';
+import '../../schema.dart';
 import '../fragments/GqlPostPreview.dart';
 import '../fragments/GqlPostFull.dart';
 import '../fragments/GqlCommentWithAuthor.dart';
@@ -132,6 +132,6 @@ GqlCreatePostVariables deserializeGqlCreatePostVariables(
 Map<String, dynamic> serializeGqlCreatePostVariables(
     GqlCreatePostVariables data) {
   return {
-    'input': serializeGqlPostInput(data.input),
+    'input': serializeGqlPostInput((data.input as GqlPostInput)),
   };
 }

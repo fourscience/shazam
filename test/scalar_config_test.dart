@@ -59,6 +59,7 @@ mutation SetTime(\$at: DateTime!) {
         ),
       },
       configPath: 'config.yaml',
+      keywordReplacements: const {},
     );
 
     final generator = Generator(config);
@@ -79,9 +80,8 @@ mutation SetTime(\$at: DateTime!) {
           "map((e) => e == null ? null : CustomDateTime.deserialize(e as String))"),
     );
 
-    final setTimeSource =
-        File(p.join(outputDir, 'operations', 'SetTime.dart'))
-            .readAsStringSync();
+    final setTimeSource = File(p.join(outputDir, 'operations', 'SetTime.dart'))
+        .readAsStringSync();
     expect(setTimeSource, contains("import 'package:custom/scalars.dart';"));
     expect(
       setTimeSource,

@@ -9,4 +9,4 @@ export 'fragments/GqlPostPreview.dart';
 export 'fragments/GqlUserFull.dart';
 export 'fragments/GqlUserPreview.dart';
 export 'helpers.dart';
-export 'types.dart';
+export '../schema.dart';

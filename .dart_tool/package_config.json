@@ -339,8 +339,8 @@
     }
   ],
   "generator": "pub",
-  "generatorVersion": "3.8.1",
-  "flutterRoot": "file:///Users/dalestales/fvm/versions/3.32.7",
-  "flutterVersion": "3.32.7",
+  "generatorVersion": "3.9.2",
+  "flutterRoot": "file:///Users/dalestales/flutter",
+  "flutterVersion": "3.35.3",
   "pubCache": "file:///Users/dalestales/.pub-cache"
 }

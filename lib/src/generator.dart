@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:gql/ast.dart';
+
 import 'builders/document_ir_builder.dart';
 import 'builders/ir_context.dart';
 import 'config.dart';
@@ -38,17 +40,32 @@ class Generator {
 
     final operations = await OperationsLoader(inputDir: config.inputDir).load();
 
-    for (final doc in operations.documents) {
-      final context = IrBuildContext(
-        config: config,
-        schema: schema,
-        schemaIndex: schemaIndex,
-        cache: cache,
-      );
-      final ir = DocumentIrBuilder(context).build(doc);
-      await renderer.render(ir, config, plugins);
+    if (operations.documents.isEmpty) {
+      logWarn('No operations found under ${config.inputDir}; nothing to do');
+      return;
     }
 
+    final merged = _mergeDocuments(operations.documents);
+
+    final context = IrBuildContext(
+      config: config,
+      schema: schema,
+      schemaIndex: schemaIndex,
+      cache: cache,
+    );
+    final ir = DocumentIrBuilder(context).build(merged);
+    await renderer.render(ir, config, plugins);
+
     logInfo('Build completed');
+  }
+
+  DocumentSource _mergeDocuments(List<DocumentSource> sources) {
+    final defs = <DefinitionNode>[];
+    for (final src in sources) {
+      defs.addAll(src.document.definitions);
+    }
+    final basePath = sources.first.path;
+    final mergedDoc = DocumentNode(definitions: defs);
+    return DocumentSource(path: basePath, document: mergedDoc);
   }
 }

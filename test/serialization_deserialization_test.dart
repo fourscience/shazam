@@ -4,7 +4,7 @@ import '../spec_suite/generated/operations/CreatePost.dart';
 import '../spec_suite/generated/operations/OnPostAdded.dart';
 import '../spec_suite/generated/operations/ToggleLike.dart';
 import '../spec_suite/generated/helpers.dart';
-import '../spec_suite/generated/types.dart';
+import '../spec_suite/schema.dart';
 import '../spec_suite/generated/operations/GetUserAndSearch.dart';
 import '../spec_suite/generated/operations/OnActivity.dart';
 
@@ -41,7 +41,8 @@ void main() {
 
   group('serialization', () {
     test('serializes inputs', () {
-      final metadata = (isPublished: true, rating: 4.5);
+      final metadata =
+          GqlMetadataInput(isPublished: true, rating: 4.5, not: null);
       final input = (
         title: 'Hello',
         content: 'World',
@@ -97,10 +98,7 @@ void main() {
     });
 
     test('enum fields serialize via .name', () {
-      final input = (
-        isPublished: true,
-        rating: 1.0,
-      );
+      final input = GqlMetadataInput(isPublished: true, rating: 1.0, not: null);
       final postInput = (
         title: 't',
         content: 'c',
@@ -108,7 +106,8 @@ void main() {
         metadata: input,
       );
       // role is optional; ensure serializer for enums uses .name
-      expect(serializeGqlMetadataInput(input), containsPair('isPublished', true));
+      expect(
+          serializeGqlMetadataInput(input), containsPair('isPublished', true));
       expect(serializeGqlPostInput(postInput), containsPair('title', 't'));
     });
   });

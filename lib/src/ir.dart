@@ -74,12 +74,15 @@ class FieldIr {
     required this.jsonKey,
     required this.type,
     required this.nullable,
+    this.thunkTarget,
   });
 
   final String name;
   final String jsonKey;
   final String type;
   final bool nullable;
+  final String?
+      thunkTarget; // when type is generated as a thunk, points to real target type
 }
 
 class EnumIr {

@@ -1,4 +1,4 @@
-import '../types.dart';
+import '../../schema.dart';
 import '../fragments/GqlUserFull.dart';
 import '../fragments/GqlPostPreview.dart';
 import '../fragments/GqlCommentWithAuthor.dart';
@@ -241,13 +241,13 @@ extension GqlGetUserAndSearchSearchMatcher on GqlGetUserAndSearchSearch {
     T Function()? orElse,
   }) {
     if (user != null && this.user != null) {
-      return user!(this.user!);
+      return user(this.user!);
     }
     if (post != null && this.post != null) {
-      return post!(this.post!);
+      return post(this.post!);
     }
     if (comment != null && this.comment != null) {
-      return comment!(this.comment!);
+      return comment(this.comment!);
     }
     return orElse?.call();
   }
