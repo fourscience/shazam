@@ -1,5 +1,5 @@
 import 'package:code_builder/code_builder.dart';
-import 'package:shazam/src/ir.dart';
+import 'package:shazam/src/document_ir.dart';
 
 /// Semantic version of the IR surface passed to plugins.
 /// Bump when breaking changes are made to [DocumentIr] or related models.
@@ -15,17 +15,17 @@ const irSchemaVersion = '1.0.0';
 abstract class GeneratorPlugin {
   /// Invoked right after IR is built, before any rendering.
   /// Safe for analytics or preparing additional artifacts; avoid mutating IR.
-  void onDocument(CodegenContext ctx) {}
+  void onDocument(CodegenContext ctx);
 
   /// Invoked before a library is emitted for a document; plugins may mutate the builder.
   /// Allowed: add imports, add declarations, annotate code, register parts.
   /// Avoid removing user-generated code or changing existing declarations.
-  void onLibrary(LibraryBuilder library, CodegenContext ctx) {}
+  void onLibrary(LibraryBuilder library, CodegenContext ctx);
 
   /// Invoked after all files for a document are written.
   /// Use this to emit extra files into [CodegenContext.outputRoot] or
   /// perform cleanup. Do not assume synchronous ordering between documents.
-  void onRenderComplete(CodegenContext ctx) {}
+  void onRenderComplete(CodegenContext ctx);
 }
 
 /// Context passed to plugins with useful metadata about the render operation.
@@ -36,7 +36,7 @@ class RenderContext {
   final String outputRoot;
 
   /// The configuration used for generation.
-  final dynamic config;
+  final Object config;
 }
 
 /// Aggregated context passed to plugins for convenience.
@@ -49,7 +49,7 @@ class CodegenContext {
 
   final DocumentIr ir;
   final RenderContext render;
-  final dynamic config;
+  final Object config;
 }
 
 /// Example plugin that injects a comment into every generated library:

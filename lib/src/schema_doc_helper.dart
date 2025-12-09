@@ -1,6 +1,6 @@
 import 'package:gql/ast.dart';
 
-import 'schema.dart';
+import 'package:shazam/src/schema.dart';
 
 /// Centralizes access to descriptions from the parsed schema SDL.
 class SchemaDocHelper {

@@ -1,11 +1,11 @@
-import 'config.dart';
-import 'ir.dart';
-import 'log.dart';
-import 'pipeline.dart';
-import 'plugin.dart';
-import 'plugin_loader.dart';
-import 'renderer.dart';
-import 'operations.dart';
+import 'package:shazam/src/codegen_pipeline.dart';
+import 'package:shazam/src/config.dart';
+import 'package:shazam/src/document_ir.dart';
+import 'package:shazam/src/generator_plugin.dart';
+import 'package:shazam/src/log.dart';
+import 'package:shazam/src/operations_loader.dart';
+import 'package:shazam/src/plugin_loader.dart';
+import 'package:shazam/src/renderer.dart';
 
 typedef RendererFactory = Renderer Function(Config config);
 typedef OperationsLoaderFactory = OperationsLoader Function(String inputDir);
@@ -26,13 +26,12 @@ class Generator {
     OperationsLoaderFactory operationsLoaderFactory =
         _defaultOperationsLoaderFactory,
     CacheFactory cacheFactory = _defaultCacheFactory,
-    PluginLoader pluginLoader = const PluginLoader(),
+    this.pluginLoader = const PluginLoader(),
   })  : plugins = plugins ?? [],
         renderer = renderer ?? rendererFactory(config),
         cache = cache ?? cacheFactory(),
         operationsLoader =
-            operationsLoader ?? operationsLoaderFactory(config.inputDir),
-        pluginLoader = pluginLoader;
+            operationsLoader ?? operationsLoaderFactory(config.inputDir);
 
   final Config config;
   final List<GeneratorPlugin> plugins;

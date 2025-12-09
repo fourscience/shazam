@@ -1,9 +1,8 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:shazam/src/operations_loader.dart';
 import 'package:test/test.dart';
-
-import 'package:shazam/src/operations.dart';
 
 void main() {
   test('OperationsLoader reads only top-level .graphql files', () async {
@@ -14,7 +13,7 @@ void main() {
       ..writeAsStringSync('query Root { __typename }');
     Directory(p.join(dir.path, 'nested')).createSync();
     File(p.join(dir.path, 'nested', 'ignored.graphql'))
-      ..writeAsStringSync('query Ignored { __typename }');
+      .writeAsStringSync('query Ignored { __typename }');
 
     final loader = OperationsLoader(inputDir: dir.path);
     final bundle = await loader.load();

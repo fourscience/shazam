@@ -1,10 +1,8 @@
 import 'package:code_builder/code_builder.dart';
-
 import 'package:shazam/src/alias_helper.dart';
-import 'package:shazam/src/ir.dart';
-import 'package:shazam/src/name_type_helpers.dart';
-
-import 'serializer_emitter.dart';
+import 'package:shazam/src/document_ir.dart';
+import 'package:shazam/src/emitters/serializer_emitter.dart';
+import 'package:shazam/src/naming_helper.dart';
 
 class RecordEmitter {
   RecordEmitter(this.typeHelper, this.serializer)
@@ -98,7 +96,7 @@ class RecordEmitter {
         entries.add({'variant': core, 'field': field.name, 'type': core});
       }
     }
-    if (entries.isEmpty) return Code('');
+    if (entries.isEmpty) return const Code('');
 
     return Extension((b) {
       b

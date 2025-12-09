@@ -30,6 +30,21 @@ class Config {
   final Map<String, String> keywordReplacements;
   final List<String> pluginPaths;
 
+  // ignore: sort_constructors_first, reason: 'Placed near the primary constructor for readability.'
+  factory Config._default() => Config(
+        outputDir: 'generated',
+        inputDir: 'lib',
+        nullableMode: NullableMode.required,
+        namePrefix: 'Gql',
+        compressQueries: true,
+        emitHelpers: true,
+        schemaPath: 'schema.graphql',
+        scalarMapping: {},
+        configPath: 'config.yaml',
+        keywordReplacements: const {},
+        pluginPaths: const [],
+      );
+
   static Future<Config> load(File file) async {
     if (!file.existsSync()) {
       return Config._default();
@@ -88,20 +103,6 @@ class Config {
         return NullableMode.required;
     }
   }
-
-  factory Config._default() => Config(
-        outputDir: 'generated',
-        inputDir: 'lib',
-        nullableMode: NullableMode.required,
-        namePrefix: 'Gql',
-        compressQueries: true,
-        emitHelpers: true,
-        schemaPath: 'schema.graphql',
-        scalarMapping: {},
-        configPath: 'config.yaml',
-        keywordReplacements: const {},
-        pluginPaths: const [],
-      );
 
   void _validate() {
     final issues = <String>[];
@@ -230,7 +231,7 @@ enum NullableMode { required, optional }
 class ScalarConfig {
   const ScalarConfig({required this.symbol, this.import});
 
-  factory ScalarConfig.fromYaml(dynamic value, {required String key}) {
+  factory ScalarConfig.fromYaml(Object? value, {required String key}) {
     if (value is String) {
       return ScalarConfig(symbol: value);
     }

@@ -2,10 +2,9 @@ import 'dart:async';
 import 'dart:mirrors';
 
 import 'package:path/path.dart' as p;
-
 import 'package:shazam/src/config.dart';
+import 'package:shazam/src/generator_plugin.dart';
 import 'package:shazam/src/log.dart';
-import 'package:shazam/src/plugin.dart';
 
 /// Loads GeneratorPlugin instances from the plugin paths configured in
 /// config.yaml. Each plugin file must export either:
@@ -24,8 +23,11 @@ class PluginLoader {
         final plugins = await _pluginsFromLibrary(lib);
         loaded.addAll(plugins);
         logInfo('Loaded ${plugins.length} plugin(s) from $path');
-      } catch (e) {
-        throw StateError('Failed to load plugin at $path: $e');
+      } catch (e, st) {
+        Error.throwWithStackTrace(
+          StateError('Failed to load plugin at $path: $e'),
+          st,
+        );
       }
     }
     return loaded;
@@ -56,7 +58,7 @@ class PluginLoader {
         'Plugin library must export `plugin`, `plugins`, or `shazamPlugins()` returning GeneratorPlugin(s).');
   }
 
-  Future<List<GeneratorPlugin>?> _asPlugins(dynamic value) async {
+  Future<List<GeneratorPlugin>?> _asPlugins(Object? value) async {
     if (value is GeneratorPlugin) {
       return [value];
     }

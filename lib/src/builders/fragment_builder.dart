@@ -1,11 +1,9 @@
 import 'package:gql/ast.dart';
-
-import 'package:shazam/src/ir.dart';
-import 'package:shazam/src/name_type_helpers.dart';
-import 'package:shazam/src/operations.dart';
-
-import 'ir_context.dart';
-import 'record_builder.dart';
+import 'package:shazam/src/builders/ir_build_context.dart';
+import 'package:shazam/src/builders/record_builder.dart';
+import 'package:shazam/src/document_ir.dart';
+import 'package:shazam/src/naming_helper.dart';
+import 'package:shazam/src/operations_loader.dart';
 
 /// Builds fragments and caches them for reuse.
 class FragmentBuilder {
@@ -46,9 +44,12 @@ class FragmentBuilder {
         name: name,
         owner: name,
       );
-    } catch (e) {
-      throw StateError(
-          'Failed to build fragment "$name": $e. Verify schema fields, scalar mappings, and keyword replacements.');
+    } catch (e, st) {
+      Error.throwWithStackTrace(
+        StateError(
+            'Failed to build fragment "$name": $e. Verify schema fields, scalar mappings, and keyword replacements.'),
+        st,
+      );
     }
     for (final dep in deps) {
       final depFrag = build(dep);

@@ -24,7 +24,8 @@ class Schema {
   final Map<String, InputObjectTypeDefinitionNode> inputs;
   final Set<String> scalars;
 
-  static Schema parse(String source) {
+  // ignore: sort_constructors_first, reason: 'Named factory keeps parsing semantics explicit.'
+  factory Schema.parse(String source) {
     final doc = parseString(source);
     String? query;
     String? mutation;
@@ -32,16 +33,12 @@ class Schema {
     for (final def in doc.definitions) {
       if (def is SchemaDefinitionNode) {
         for (final op in def.operationTypes) {
-          switch (op.operation) {
-            case OperationType.query:
-              query = op.type.name.value;
-              break;
-            case OperationType.mutation:
-              mutation = op.type.name.value;
-              break;
-            case OperationType.subscription:
-              subscription = op.type.name.value;
-              break;
+          if (op.operation == OperationType.query) {
+            query = op.type.name.value;
+          } else if (op.operation == OperationType.mutation) {
+            mutation = op.type.name.value;
+          } else if (op.operation == OperationType.subscription) {
+            subscription = op.type.name.value;
           }
         }
       }

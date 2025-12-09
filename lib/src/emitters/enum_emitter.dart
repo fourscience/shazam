@@ -1,6 +1,6 @@
 import 'package:code_builder/code_builder.dart';
 
-import 'package:shazam/src/ir.dart';
+import 'package:shazam/src/document_ir.dart';
 
 class EnumEmitter {
   Spec emitEnum(EnumIr enm) {
@@ -17,11 +17,12 @@ class EnumEmitter {
   }
 
   String _enumCase(String name) {
+    // ignore: unnecessary_raw_strings, reason: 'Raw regexp keeps escapes minimal.'
     final cleaned = name.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
     if (RegExp(r'^[A-Z0-9_]+$').hasMatch(cleaned)) {
       return cleaned;
     }
-    final parts = cleaned.split(RegExp(r'[_\\s]+'));
+    final parts = cleaned.split(RegExp(r'[_\s]+'));
     final camel = parts
         .where((p) => p.isNotEmpty)
         .map((p) => p[0].toUpperCase() + p.substring(1).toLowerCase())

@@ -14,7 +14,7 @@ void main() {
       }
     });
 
-    final schema = '''
+    const schema = '''
 scalar DateTime
 
 type Query {
@@ -27,14 +27,14 @@ type Mutation {
 }
 ''';
 
-    final operations = '''
+    const operations = r'''
 query GetTimes {
   now
   events
 }
 
-mutation SetTime(\$at: DateTime!) {
-  setTime(at: \$at)
+mutation SetTime($at: DateTime!) {
+  setTime(at: $at)
 }
 ''';
 
@@ -78,7 +78,7 @@ mutation SetTime(\$at: DateTime!) {
     expect(
       getTimesSource,
       contains(
-          "map((e) => e == null ? null : CustomDateTime.deserialize(e as String))"),
+          'map((e) => e == null ? null : CustomDateTime.deserialize(e as String))'),
     );
 
     final setTimeSource = File(p.join(outputDir, 'operations', 'SetTime.dart'))
@@ -87,7 +87,7 @@ mutation SetTime(\$at: DateTime!) {
     expect(
       setTimeSource,
       contains(
-          'setTime: CustomDateTime.deserialize(json[\'setTime\'] as String)'),
+          "setTime: CustomDateTime.deserialize(json['setTime'] as String)"),
     );
     expect(
       setTimeSource,

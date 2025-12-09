@@ -6,12 +6,12 @@ import 'package:gql/ast.dart';
 import 'package:shazam/src/config.dart';
 import 'package:shazam/src/generator.dart';
 import 'package:shazam/src/log.dart';
-import 'package:shazam/src/operations.dart';
+import 'package:shazam/src/operations_loader.dart';
 import 'package:shazam/src/schema.dart';
-import 'package:shazam/src/watcher.dart';
+import 'package:shazam/src/shazam_watcher.dart';
 
 Future<void> main(List<String> args) async {
-  final runner = _ShazamCommandRunner();
+  final runner = Shazam();
   try {
     await runner.run(args);
   } on UsageException catch (e) {
@@ -60,7 +60,7 @@ Future<void> _runList(String configPath) async {
   late final Schema schema;
   try {
     schema = Schema.parse(await schemaFile.readAsString());
-  } catch (e) {
+  } on Exception catch (e) {
     logError('Failed to parse schema at ${config.schemaPath}: $e');
     exitCode = 1;
     return;
@@ -70,7 +70,7 @@ Future<void> _runList(String configPath) async {
   late final OperationsBundle bundle;
   try {
     bundle = await loader.load();
-  } catch (e) {
+  } on Exception catch (e) {
     logError('Failed to read operations from ${config.inputDir}: $e');
     exitCode = 1;
     return;
@@ -151,8 +151,8 @@ void _printScalars(Schema schema, Config config) {
   }
 }
 
-class _ShazamCommandRunner extends CommandRunner<void> {
-  _ShazamCommandRunner()
+class Shazam extends CommandRunner<void> {
+  Shazam()
       : super('shazam', 'GraphQL codegen for Dart (build, list, and watch).') {
     addCommand(_BuildCommand());
     addCommand(_ListCommand());

@@ -4,11 +4,6 @@ import 'package:gql/ast.dart';
 import 'package:gql/language.dart';
 import 'package:path/path.dart' as p;
 
-class OperationsBundle {
-  OperationsBundle({required this.documents});
-  final List<DocumentSource> documents;
-}
-
 class OperationsLoader {
   OperationsLoader({required this.inputDir});
   final String inputDir;
@@ -25,7 +20,7 @@ class OperationsLoader {
 
   Future<List<String>> _collectFiles() async {
     final result = <String>[];
-  
+
     final dir = Directory(inputDir);
     if (!dir.existsSync()) {
       return result;
@@ -39,6 +34,11 @@ class OperationsLoader {
     }
     return result;
   }
+}
+
+class OperationsBundle {
+  OperationsBundle({required this.documents});
+  final List<DocumentSource> documents;
 }
 
 class DocumentSource {

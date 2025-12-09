@@ -1,10 +1,9 @@
 import 'package:gql/ast.dart';
 
-import 'package:shazam/src/ir.dart';
-import 'package:shazam/src/name_type_helpers.dart';
+import 'package:shazam/src/builders/ir_build_context.dart';
+import 'package:shazam/src/document_ir.dart';
+import 'package:shazam/src/naming_helper.dart';
 import 'package:shazam/src/schema.dart';
-
-import 'ir_context.dart';
 
 /// Builds IR records for input objects, suffixing names with `Input`.
 class InputBuilder {
@@ -109,7 +108,7 @@ class InputBuilder {
 
   String _pref(String name) =>
       '${context.config.namePrefix}${naming.pascal(name)}';
-  dynamic _valueFromNode(ValueNode? node) {
+  Object? _valueFromNode(ValueNode? node) {
     if (node == null) return null;
     if (node is IntValueNode) return int.parse(node.value);
     if (node is FloatValueNode) return double.parse(node.value);

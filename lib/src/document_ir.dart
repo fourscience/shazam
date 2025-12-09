@@ -29,8 +29,9 @@ class OperationIr {
     required this.record,
     required this.fragments,
     this.variableRecord,
-    Map<String, dynamic>? variableDefaults,
-  }) : variableDefaults = variableDefaults ?? const {};
+    Map<String, Object?>? variableDefaults,
+  }) : variableDefaults =
+            variableDefaults ?? const <String, Object?>{};
 
   final String name;
   final OperationType type;
@@ -38,7 +39,7 @@ class OperationIr {
   final RecordIr record;
   final Set<String> fragments;
   final RecordIr? variableRecord;
-  final Map<String, dynamic> variableDefaults;
+  final Map<String, Object?> variableDefaults;
 }
 
 class FragmentIr {
@@ -92,7 +93,7 @@ class FieldIr {
   final String?
       thunkTarget; // when type is generated as a thunk, points to real target type
   final String? description;
-  final dynamic defaultValue;
+  final Object? defaultValue;
 }
 
 class EnumIr {

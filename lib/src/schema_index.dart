@@ -1,6 +1,6 @@
 import 'package:gql/ast.dart';
 
-import 'schema.dart';
+import 'package:shazam/src/schema.dart';
 
 /// Read-only index over parsed schema definitions to centralize lookups.
 class SchemaIndex {

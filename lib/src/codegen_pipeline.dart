@@ -3,22 +3,15 @@ import 'dart:io';
 import 'package:gql/ast.dart';
 
 import 'package:shazam/src/builders/document_ir_builder.dart';
-import 'package:shazam/src/builders/ir_context.dart';
+import 'package:shazam/src/builders/ir_build_context.dart';
 import 'package:shazam/src/config.dart';
-import 'package:shazam/src/ir.dart';
-import 'package:shazam/src/operations.dart';
-import 'package:shazam/src/plugin.dart';
+import 'package:shazam/src/document_ir.dart';
+import 'package:shazam/src/generator_plugin.dart';
+import 'package:shazam/src/operations_loader.dart';
 import 'package:shazam/src/renderer.dart';
 import 'package:shazam/src/schema.dart';
-import 'package:shazam/src/schema_docs.dart';
+import 'package:shazam/src/schema_doc_helper.dart';
 import 'package:shazam/src/schema_index.dart';
-
-class SchemaContext {
-  SchemaContext({required this.schema, required this.index});
-
-  final Schema schema;
-  final SchemaIndex index;
-}
 
 /// Coordinates the individual codegen stages so they can be exercised
 /// independently: schema load, operations load, IR build, and render.
@@ -72,4 +65,11 @@ class CodegenPipeline {
   }
 
   Future<void> render(DocumentIr ir) => renderer.render(ir, config, plugins);
+}
+
+class SchemaContext {
+  SchemaContext({required this.schema, required this.index});
+
+  final Schema schema;
+  final SchemaIndex index;
 }

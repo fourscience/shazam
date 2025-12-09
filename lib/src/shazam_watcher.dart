@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:shazam/src/config.dart';
+import 'package:shazam/src/log.dart';
 import 'package:watcher/watcher.dart';
-
-import 'config.dart';
-import 'log.dart';
 
 class ShazamWatcher {
   ShazamWatcher(this.config, {required this.onChange});
@@ -14,7 +13,7 @@ class ShazamWatcher {
 
   StreamSubscription<WatchEvent>? _sub;
 
-  Future<void> start() async {
+  Future<void> start() {
     final targets = <String>{
       config.inputDir,
       config.schemaPath,
@@ -34,10 +33,17 @@ class ShazamWatcher {
       }
     }
 
-    _sub = StreamGroup.merge(watchers).listen((event) async {
+    _sub = StreamGroup.merge(watchers).listen((event) {
       logInfo('Change detected: ${event.path}');
-      await onChange();
+      final result = onChange();
+      if (result is Future) {
+        result.catchError((Object error, StackTrace stackTrace) {
+          logError('Watch callback failed: $error');
+          Error.throwWithStackTrace(error, stackTrace);
+        });
+      }
     });
+    return Future.value();
   }
 
   Future<void> dispose() async {

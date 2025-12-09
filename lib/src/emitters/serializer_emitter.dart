@@ -1,5 +1,5 @@
 import 'package:shazam/src/config.dart';
-import 'package:shazam/src/name_type_helpers.dart';
+import 'package:shazam/src/naming_helper.dart';
 
 class SerializerEmitter {
   SerializerEmitter(this.typeHelper, this.scalarTypes);
@@ -40,7 +40,7 @@ class SerializerEmitter {
           : '($safeSource as List)';
       final chain = nullable ? '?.' : '.';
       final innerExpr = deserializeForType(inner, 'e', recordNames, enumNames);
-      return "$src$chain" "map((e) => $innerExpr).toList()";
+      return '$src${chain}map((e) => $innerExpr).toList()';
     }
 
     if (recordNames.contains(core)) {
@@ -88,7 +88,7 @@ class SerializerEmitter {
       final inner = core.substring(5, core.length - 1);
       final chain = nullable ? '?.' : '.';
       final innerExpr = serializeForType(inner, 'e', recordNames, enumNames);
-      return "$source$chain" "map((e) => $innerExpr).toList()";
+      return '$source${chain}map((e) => $innerExpr).toList()';
     }
 
     if (recordNames.contains(core)) {

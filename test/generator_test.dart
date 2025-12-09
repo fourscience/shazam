@@ -1,37 +1,12 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
-import 'package:test/test.dart';
-
 import 'package:shazam/src/config.dart';
 import 'package:shazam/src/generator.dart';
-import 'package:shazam/src/ir.dart';
-import 'package:shazam/src/operations.dart';
-import 'package:shazam/src/plugin.dart';
-import 'package:shazam/src/renderer.dart';
+import 'package:shazam/src/operations_loader.dart';
+import 'package:test/test.dart';
 
-class _FakeOperationsLoader implements OperationsLoader {
-  _FakeOperationsLoader(this.bundle);
-  final OperationsBundle bundle;
-  bool called = false;
-  @override
-  String get inputDir => '';
-
-  @override
-  Future<OperationsBundle> load() async {
-    called = true;
-    return bundle;
-  }
-}
-
-class _FakeRenderer implements Renderer {
-  bool rendered = false;
-  @override
-  Future<void> render(
-      DocumentIr ir, Config config, List<GeneratorPlugin> plugins) async {
-    rendered = true;
-  }
-}
+import 'fakes/fake_operations_loader.dart';
 
 void main() {
   test('Generator uses injected OperationsLoader', () async {
@@ -55,8 +30,8 @@ void main() {
     );
 
     final fakeLoader =
-        _FakeOperationsLoader(OperationsBundle(documents: const []));
-    final renderer = _FakeRenderer();
+        FakeOperationsLoader(OperationsBundle(documents: const []));
+    final renderer = FakeRenderer();
     final generator = Generator(
       config,
       operationsLoader: fakeLoader,

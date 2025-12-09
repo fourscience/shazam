@@ -7,8 +7,8 @@ import 'package:gql/ast.dart';
 import 'package:gql/language.dart';
 
 import 'package:shazam/src/config.dart';
-import 'package:shazam/src/ir.dart';
-import 'package:shazam/src/name_type_helpers.dart';
+import 'package:shazam/src/document_ir.dart';
+import 'package:shazam/src/naming_helper.dart';
 
 class OperationEmitter {
   OperationEmitter(this.config, this.typeHelper);
@@ -70,7 +70,7 @@ class OperationEmitter {
   }
 
   String operationRequest(
-      String name, String? variableRecord, Map<String, dynamic> defaults) {
+      String name, String? variableRecord, Map<String, Object?> defaults) {
     final opConst = '${config.namePrefix}${name}Operation';
     final builderName = 'build${config.namePrefix}${name}Request';
     final hasDefaults = defaults.isNotEmpty;
@@ -150,7 +150,7 @@ $recordType $parseName(Map<String, dynamic> json) => deserialize$recordType(json
         }
       }
     }
-    return imports.map((path) => Directive.import(path)).toList();
+    return imports.map(Directive.import).toList();
   }
 
   List<Directive> fragmentImports(FragmentIr frag,

@@ -1,13 +1,12 @@
 import 'package:gql/ast.dart';
 
-import 'package:shazam/src/ir.dart';
-import 'package:shazam/src/name_type_helpers.dart';
-import 'package:shazam/src/operations.dart';
+import 'package:shazam/src/builders/fragment_builder.dart';
+import 'package:shazam/src/builders/ir_build_context.dart';
+import 'package:shazam/src/builders/record_builder.dart';
+import 'package:shazam/src/document_ir.dart';
+import 'package:shazam/src/naming_helper.dart';
+import 'package:shazam/src/operations_loader.dart';
 import 'package:shazam/src/schema.dart';
-
-import 'fragment_builder.dart';
-import 'ir_context.dart';
-import 'record_builder.dart';
 
 /// Builds operations IR, stitching in fragments and records.
 class OperationBuilder {
@@ -21,7 +20,7 @@ class OperationBuilder {
 
   final Map<String, OperationIr> operations = {};
   final List<RecordIr> variableRecords = [];
-  final Map<String, Map<String, dynamic>> variableDefaults = {};
+  final Map<String, Map<String, Object?>> variableDefaults = {};
 
   void build(DocumentSource source) {
     for (final def in source.document.definitions) {
@@ -51,11 +50,15 @@ class OperationBuilder {
             record: record,
             fragments: fragDeps,
             variableRecord: _buildVariables(opName, def),
-            variableDefaults: variableDefaults[opName] ?? const {},
+            variableDefaults:
+                variableDefaults[opName] ?? const <String, Object?>{},
           );
-        } catch (e) {
-          throw StateError(
-              'Failed to build operation "$opName": $e. Check schema fields, scalar mappings, and keyword replacements.');
+        } catch (e, st) {
+          Error.throwWithStackTrace(
+            StateError(
+                'Failed to build operation "$opName": $e. Check schema fields, scalar mappings, and keyword replacements.'),
+            st,
+          );
         }
       }
     }
@@ -123,7 +126,7 @@ class OperationBuilder {
     return record;
   }
 
-  dynamic _valueFromNode(ValueNode node) {
+  Object? _valueFromNode(ValueNode node) {
     if (node is IntValueNode) return int.parse(node.value);
     if (node is FloatValueNode) return double.parse(node.value);
     if (node is StringValueNode) return node.value;
