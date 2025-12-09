@@ -8,6 +8,7 @@
       "version": "0.1.0",
       "dependencies": [
         "args",
+        "change_case",
         "code_builder",
         "collection",
         "dart_style",
@@ -57,6 +58,13 @@
       "name": "lints",
       "version": "3.0.0",
       "dependencies": []
+    },
+    {
+      "name": "change_case",
+      "version": "2.2.0",
+      "dependencies": [
+        "meta"
+      ]
     },
     {
       "name": "code_builder",

@@ -2,15 +2,18 @@ import 'package:collection/collection.dart';
 import 'package:gql/ast.dart';
 
 import '../ir.dart';
+import '../name_type_helpers.dart';
 import '../schema.dart';
 import 'ir_context.dart';
 
 /// Builds record IRs (typedef shapes) with caching and schema-aware lookups.
 class RecordBuilder {
-  RecordBuilder(this.context, {this.resolveFragment});
+  RecordBuilder(this.context, {this.resolveFragment})
+      : naming = NamingHelper(context.config);
 
   final IrBuildContext context;
   final RecordIr? Function(String name)? resolveFragment;
+  final NamingHelper naming;
 
   final Map<String, RecordIr> records = {};
 
@@ -34,7 +37,7 @@ class RecordBuilder {
       if (sel is FieldNode) {
         final jsonKey = sel.alias?.value ?? sel.name.value;
         final rawName = sel.name.value == '__typename' ? 'typeName' : jsonKey;
-        final fieldName = _sanitize(rawName);
+        final fieldName = naming.sanitize(rawName);
         final fieldDef = parentFields
             ?.firstWhereOrNull((f) => f.name.value == sel.name.value);
         if (fieldDef == null) {
@@ -59,7 +62,7 @@ class RecordBuilder {
             thunkTarget: null,
           );
         } else {
-          final nestedName = '${name}${_pascal(fieldName)}';
+          final nestedName = '${name}${naming.pascal(fieldName)}';
           final namedType = _namedType(typeRef);
           final nestedRecord = build(
             rootType: namedType,
@@ -93,17 +96,17 @@ class RecordBuilder {
             spec.fields.putIfAbsent(entry.key, () => entry.value);
           }
         } else if (_isUnionOrInterface(rootType)) {
-          final variantName = '${name}${_pascal(typeCondition)}';
+          final variantName = '${name}${naming.pascal(typeCondition)}';
           final nested = build(
               rootType: typeCondition,
               selection: sel.selectionSet,
               name: variantName,
               owner: owner);
           spec.variants.add(typeCondition);
-          final variantField = _sanitize(_camel(typeCondition));
+          final variantField = naming.sanitize(naming.camel(typeCondition));
           spec.fields[variantField] = FieldIr(
             name: variantField,
-            jsonKey: _camel(typeCondition),
+            jsonKey: naming.camel(typeCondition),
             type: '${nested.name}?',
             nullable: true,
             thunkTarget: null,
@@ -186,23 +189,8 @@ class RecordBuilder {
     return ref.isNonNull ? name : '$name?';
   }
 
-  String _pref(String name) => '${context.config.namePrefix}${_pascal(name)}';
-
-  String _pascal(String value) {
-    if (value.isEmpty) return value;
-    return value
-        .split(RegExp(r'[_\s]+'))
-        .map((part) =>
-            part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1))
-        .join();
-  }
-
-  String _camel(String value) {
-    final p = _pascal(value);
-    return p.isEmpty ? p : p[0].toLowerCase() + p.substring(1);
-  }
-
-  String _sanitize(String name) => context.config.sanitizeIdentifier(name);
+  String _pref(String name) =>
+      '${context.config.namePrefix}${naming.pascal(name)}';
 
   bool _isUnionOrInterface(String typeName) =>
       context.schemaIndex.isUnionOrInterface(typeName);

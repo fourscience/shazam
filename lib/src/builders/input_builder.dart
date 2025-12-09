@@ -1,14 +1,16 @@
 import 'package:gql/ast.dart';
 
 import '../ir.dart';
+import '../name_type_helpers.dart';
 import '../schema.dart';
 import 'ir_context.dart';
 
 /// Builds IR records for input objects, suffixing names with `Input`.
 class InputBuilder {
-  InputBuilder(this.context);
+  InputBuilder(this.context) : naming = NamingHelper(context.config);
 
   final IrBuildContext context;
+  final NamingHelper naming;
 
   /// Build all input object records from the schema.
   List<RecordIr> buildAll() {
@@ -32,7 +34,7 @@ class InputBuilder {
       final typeRef = TypeRef.fromNode(field.type);
       final dartType = _dartTypeFor(typeRef, selectionRecordName: null);
       record.fields[field.name.value] = FieldIr(
-        name: _sanitize(field.name.value),
+        name: naming.sanitize(field.name.value),
         jsonKey: field.name.value,
         type: dartType,
         nullable: !typeRef.isNonNull,
@@ -89,19 +91,9 @@ class InputBuilder {
     final trimmed = gqlName.endsWith('Input')
         ? gqlName.substring(0, gqlName.length - 5)
         : gqlName;
-    return '${context.config.namePrefix}${_pascal(trimmed)}Input';
+    return '${context.config.namePrefix}${naming.pascal(trimmed)}Input';
   }
 
-  String _pref(String name) => '${context.config.namePrefix}${_pascal(name)}';
-
-  String _pascal(String value) {
-    if (value.isEmpty) return value;
-    return value
-        .split(RegExp(r'[_\s]+'))
-        .map((part) =>
-            part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1))
-        .join();
-  }
-
-  String _sanitize(String name) => context.config.sanitizeIdentifier(name);
+  String _pref(String name) =>
+      '${context.config.namePrefix}${naming.pascal(name)}';
 }

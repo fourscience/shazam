@@ -2,6 +2,7 @@ import 'package:gql/ast.dart';
 
 import '../ir.dart';
 import '../operations.dart';
+import '../name_type_helpers.dart';
 import '../schema.dart';
 import 'fragment_builder.dart';
 import 'ir_context.dart';
@@ -9,11 +10,13 @@ import 'record_builder.dart';
 
 /// Builds operations IR, stitching in fragments and records.
 class OperationBuilder {
-  OperationBuilder(this.context, this.recordBuilder, this.fragmentBuilder);
+  OperationBuilder(this.context, this.recordBuilder, this.fragmentBuilder)
+      : naming = NamingHelper(context.config);
 
   final IrBuildContext context;
   final RecordBuilder recordBuilder;
   final FragmentBuilder fragmentBuilder;
+  final NamingHelper naming;
 
   final Map<String, OperationIr> operations = {};
   final List<RecordIr> variableRecords = [];
@@ -61,16 +64,8 @@ class OperationBuilder {
     }
   }
 
-  String _pref(String name) => '${context.config.namePrefix}${_pascal(name)}';
-
-  String _pascal(String value) {
-    if (value.isEmpty) return value;
-    return value
-        .split(RegExp(r'[_\s]+'))
-        .map((part) =>
-            part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1))
-        .join();
-  }
+  String _pref(String name) =>
+      '${context.config.namePrefix}${naming.pascal(name)}';
 
   Set<String> _collectFragments(SelectionSetNode set) {
     final result = <String>{};
@@ -99,7 +94,7 @@ class OperationBuilder {
     for (final v in def.variableDefinitions) {
       final typeRef = TypeRef.fromNode(v.type);
       final dartType = _dartTypeFor(typeRef);
-      final fieldName = _sanitize(v.variable.name.value);
+      final fieldName = naming.sanitize(v.variable.name.value);
       record.fields[fieldName] = FieldIr(
         name: fieldName,
         jsonKey: v.variable.name.value,
@@ -156,8 +151,6 @@ class OperationBuilder {
     final trimmed = gqlName.endsWith('Input')
         ? gqlName.substring(0, gqlName.length - 5)
         : gqlName;
-    return '${context.config.namePrefix}${_pascal(trimmed)}Input';
+    return '${context.config.namePrefix}${naming.pascal(trimmed)}Input';
   }
-
-  String _sanitize(String name) => context.config.sanitizeIdentifier(name);
 }

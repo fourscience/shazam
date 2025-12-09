@@ -1,16 +1,19 @@
 import 'package:gql/ast.dart';
 
 import '../ir.dart';
+import '../name_type_helpers.dart';
 import '../operations.dart';
 import 'ir_context.dart';
 import 'record_builder.dart';
 
 /// Builds fragments and caches them for reuse.
 class FragmentBuilder {
-  FragmentBuilder(this.context, this.recordBuilder);
+  FragmentBuilder(this.context, this.recordBuilder)
+      : naming = NamingHelper(context.config);
 
   final IrBuildContext context;
   final RecordBuilder recordBuilder;
+  final NamingHelper naming;
 
   final Map<String, FragmentIr> fragments = {};
   final Map<String, FragmentDefinitionNode> fragmentDefinitions = {};
@@ -62,16 +65,8 @@ class FragmentBuilder {
     return frag;
   }
 
-  String _pref(String name) => '${context.config.namePrefix}${_pascal(name)}';
-
-  String _pascal(String value) {
-    if (value.isEmpty) return value;
-    return value
-        .split(RegExp(r'[_\s]+'))
-        .map((part) =>
-            part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1))
-        .join();
-  }
+  String _pref(String name) =>
+      '${context.config.namePrefix}${naming.pascal(name)}';
 
   Set<String> _collectDeps(SelectionSetNode set) {
     final deps = <String>{};

@@ -1,17 +1,12 @@
 import 'dart:io';
 
-import 'package:gql/ast.dart';
-
-import 'builders/document_ir_builder.dart';
-import 'builders/ir_context.dart';
 import 'config.dart';
 import 'ir.dart';
 import 'log.dart';
-import 'operations.dart';
+import 'pipeline.dart';
 import 'plugin.dart';
 import 'renderer.dart';
-import 'schema.dart';
-import 'schema_index.dart';
+import 'operations.dart';
 
 /// Top-level coordinator that parses GraphQL sources, builds IR, and renders code.
 class Generator {
@@ -30,42 +25,26 @@ class Generator {
   final IrCache cache;
 
   Future<void> build() async {
-    final schemaFile = File(config.schemaPath);
-    if (!schemaFile.existsSync()) {
-      throw StateError('Schema file not found at ${config.schemaPath}');
-    }
-    final schemaSource = await schemaFile.readAsString();
-    final schema = Schema.parse(schemaSource);
-    final schemaIndex = SchemaIndex(schema);
+    final pipeline = CodegenPipeline(
+      config: config,
+      renderer: renderer,
+      plugins: plugins,
+      cache: cache,
+      operationsLoader: OperationsLoader(inputDir: config.inputDir),
+    );
 
-    final operations = await OperationsLoader(inputDir: config.inputDir).load();
+    final schemaCtx = await pipeline.loadSchema();
+    final operations = await pipeline.loadOperations();
 
     if (operations.documents.isEmpty) {
       logWarn('No operations found under ${config.inputDir}; nothing to do');
       return;
     }
 
-    final merged = _mergeDocuments(operations.documents);
-
-    final context = IrBuildContext(
-      config: config,
-      schema: schema,
-      schemaIndex: schemaIndex,
-      cache: cache,
-    );
-    final ir = DocumentIrBuilder(context).build(merged);
-    await renderer.render(ir, config, plugins);
+    final merged = pipeline.mergeDocuments(operations.documents);
+    final ir = pipeline.buildIr(merged, schemaCtx);
+    await pipeline.render(ir);
 
     logInfo('Build completed');
-  }
-
-  DocumentSource _mergeDocuments(List<DocumentSource> sources) {
-    final defs = <DefinitionNode>[];
-    for (final src in sources) {
-      defs.addAll(src.document.definitions);
-    }
-    final basePath = sources.first.path;
-    final mergedDoc = DocumentNode(definitions: defs);
-    return DocumentSource(path: basePath, document: mergedDoc);
   }
 }

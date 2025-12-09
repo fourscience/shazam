@@ -1,5 +1,6 @@
 import '../ir.dart';
 import '../operations.dart';
+import '../name_type_helpers.dart';
 import 'fragment_builder.dart';
 import 'ir_context.dart';
 import 'input_builder.dart';
@@ -8,9 +9,13 @@ import 'record_builder.dart';
 
 /// High-level coordinator to build a complete Document IR from a parsed source.
 class DocumentIrBuilder {
-  DocumentIrBuilder(this.context);
+  DocumentIrBuilder(this.context)
+      : naming = NamingHelper(context.config),
+        typeHelper = const TypeHelper();
 
   final IrBuildContext context;
+  final NamingHelper naming;
+  final TypeHelper typeHelper;
 
   DocumentIr build(DocumentSource source) {
     late final RecordBuilder recordBuilder;
@@ -60,16 +65,8 @@ class DocumentIrBuilder {
     );
   }
 
-  String _pref(String name) => '${context.config.namePrefix}${_pascal(name)}';
-
-  String _pascal(String value) {
-    if (value.isEmpty) return value;
-    return value
-        .split(RegExp(r'[_\s]+'))
-        .map((part) =>
-            part.isEmpty ? '' : part[0].toUpperCase() + part.substring(1))
-        .join();
-  }
+  String _pref(String name) =>
+      '${context.config.namePrefix}${naming.pascal(name)}';
 
   void _wrapRecursiveInputFields(List<RecordIr> inputs) {
     final inputNames = inputs.map((r) => r.name).toSet();
@@ -77,7 +74,7 @@ class DocumentIrBuilder {
     for (final record in inputs) {
       final targets = <String>{};
       for (final field in record.fields.values) {
-        final core = _coreType(field.type);
+        final core = typeHelper.coreType(field.type);
         if (inputNames.contains(core)) targets.add(core);
       }
       deps[record.name] = targets;
@@ -89,9 +86,9 @@ class DocumentIrBuilder {
     for (final record in inputs) {
       if (!cycles.contains(record.name)) continue;
       for (final entry in record.fields.entries) {
-        final core = _coreType(entry.value.type);
+        final core = typeHelper.coreType(entry.value.type);
         if (cycles.contains(core)) {
-          final wrappedType = _wrapThunk(entry.value.type);
+          final wrappedType = typeHelper.wrapThunk(entry.value.type);
           record.fields[entry.key] = FieldIr(
             name: entry.value.name,
             jsonKey: entry.value.jsonKey,
@@ -128,29 +125,5 @@ class DocumentIrBuilder {
       dfs(n);
     }
     return cyc;
-  }
-
-  String _coreType(String type) {
-    var current = type;
-    if (current.endsWith('?'))
-      current = current.substring(0, current.length - 1);
-    if (current.endsWith(' Function()')) {
-      current = current.substring(0, current.length - ' Function()'.length);
-    } else if (current.endsWith(' Function()?')) {
-      current =
-          current.substring(0, current.length - ' Function()?'.length) + '?';
-    }
-    while (current.startsWith('List<') && current.endsWith('>')) {
-      current = current.substring(5, current.length - 1);
-      if (current.endsWith('?')) {
-        current = current.substring(0, current.length - 1);
-      }
-    }
-    return current;
-  }
-
-  String _wrapThunk(String type) {
-    final nullable = type.endsWith('?');
-    return nullable ? '$type Function()?' : '$type Function()';
   }
 }

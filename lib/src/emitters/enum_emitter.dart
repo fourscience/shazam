@@ -1,0 +1,29 @@
+import 'package:code_builder/code_builder.dart';
+
+import '../ir.dart';
+
+class EnumEmitter {
+  Spec emitEnum(EnumIr enm) {
+    return Enum((b) {
+      b
+        ..name = enm.name
+        ..values.addAll(
+            enm.values.map((v) => EnumValue((ev) => ev..name = _enumCase(v))));
+    });
+  }
+
+  String _enumCase(String name) {
+    final cleaned = name.replaceAll(RegExp(r'[^a-zA-Z0-9_]'), '_');
+    if (RegExp(r'^[A-Z0-9_]+$').hasMatch(cleaned)) {
+      return cleaned;
+    }
+    final parts = cleaned.split(RegExp(r'[_\\s]+'));
+    final camel = parts
+        .where((p) => p.isNotEmpty)
+        .map((p) => p[0].toUpperCase() + p.substring(1).toLowerCase())
+        .join();
+    return camel.isEmpty
+        ? 'value'
+        : camel[0].toLowerCase() + camel.substring(1);
+  }
+}
