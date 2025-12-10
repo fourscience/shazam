@@ -10,6 +10,8 @@ class DocumentIr {
     required this.interfaceImplementations,
     required this.unionVariants,
     required this.enums,
+    required this.operationOrigins,
+    required this.fragmentOrigins,
   });
 
   final String path;
@@ -19,6 +21,8 @@ class DocumentIr {
   final Map<String, Set<String>> interfaceImplementations;
   final Map<String, Set<String>> unionVariants;
   final List<EnumIr> enums;
+  final Map<String, String> operationOrigins;
+  final Map<String, String> fragmentOrigins;
 }
 
 class OperationIr {
@@ -48,12 +52,14 @@ class FragmentIr {
     required this.node,
     required this.record,
     required this.dependencies,
+    required this.originPath,
   });
 
   final String name;
   final FragmentDefinitionNode node;
   final RecordIr record;
   final Set<String> dependencies;
+  final String originPath;
 }
 
 class RecordIr {

@@ -17,13 +17,17 @@ class DocumentIrBuilder {
   final NamingHelper naming;
   final TypeHelper typeHelper;
 
-  DocumentIr build(DocumentSource source) {
+  DocumentIr build(DocumentSource source,
+      {Iterable<DocumentSource> allSources = const []}) {
     late final RecordBuilder recordBuilder;
     late final FragmentBuilder fragmentBuilder;
     recordBuilder = RecordBuilder(context,
         resolveFragment: (name) => fragmentBuilder.build(name).record);
     fragmentBuilder = FragmentBuilder(context, recordBuilder);
-    fragmentBuilder.indexDefinitions(source);
+    final sourcesToIndex = allSources.isNotEmpty ? allSources : [source];
+    for (final src in sourcesToIndex) {
+      fragmentBuilder.indexDefinitions(src);
+    }
 
     final opBuilder = OperationBuilder(context, recordBuilder, fragmentBuilder);
     opBuilder.build(source);
@@ -37,7 +41,9 @@ class DocumentIrBuilder {
       fragmentBuilder.build(name);
     }
 
-    final fragments = fragmentBuilder.fragments.values.toList()
+    final fragments = fragmentBuilder.fragments.values
+        .where((f) => fragmentBuilder.definitionOrigins[f.name] == source.path)
+        .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
     final operations = opBuilder.operations.values.toList()
       ..sort((a, b) => a.name.compareTo(b.name));
@@ -68,6 +74,10 @@ class DocumentIrBuilder {
       interfaceImplementations: context.schemaIndex.interfaceImplementations(),
       unionVariants: context.schemaIndex.unionVariants(),
       enums: enums,
+      operationOrigins: {
+        for (final op in operations) op.name: source.path,
+      },
+      fragmentOrigins: fragmentBuilder.definitionOrigins,
     );
   }
 

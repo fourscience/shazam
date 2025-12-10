@@ -31,4 +31,11 @@ class FakeRenderer implements Renderer {
   ) async {
     rendered = true;
   }
+
+  @override
+  Future<void> renderShared(
+    DocumentIr ir,
+    Config config,
+    List<PluginRegistration> plugins,
+  ) async {}
 }

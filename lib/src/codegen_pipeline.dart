@@ -1,7 +1,5 @@
 import 'dart:io';
 
-import 'package:gql/ast.dart';
-
 import 'package:shazam/src/builders/document_ir_builder.dart';
 import 'package:shazam/src/builders/ir_build_context.dart';
 import 'package:shazam/src/config.dart';
@@ -43,17 +41,8 @@ class CodegenPipeline {
 
   Future<OperationsBundle> loadOperations() => operationsLoader.load();
 
-  DocumentSource mergeDocuments(List<DocumentSource> sources) {
-    final defs = <DefinitionNode>[];
-    for (final src in sources) {
-      defs.addAll(src.document.definitions);
-    }
-    final basePath = config.schemaPath;
-    final mergedDoc = DocumentNode(definitions: defs);
-    return DocumentSource(path: basePath, document: mergedDoc);
-  }
-
-  DocumentIr buildIr(DocumentSource merged, SchemaContext schemaCtx) {
+  List<DocumentIr> buildAll(
+      List<DocumentSource> sources, SchemaContext schemaCtx) {
     final context = IrBuildContext(
       config: config,
       schema: schemaCtx.schema,
@@ -61,10 +50,16 @@ class CodegenPipeline {
       cache: cache,
       docs: SchemaDocHelper(schemaCtx.schema),
     );
-    return DocumentIrBuilder(context).build(merged);
+    final builder = DocumentIrBuilder(context);
+    return [
+      for (final src in sources) builder.build(src, allSources: sources),
+    ];
   }
 
   Future<void> render(DocumentIr ir) => renderer.render(ir, config, plugins);
+
+  Future<void> renderShared(DocumentIr merged) =>
+      renderer.renderShared(merged, config, plugins);
 }
 
 class SchemaContext {

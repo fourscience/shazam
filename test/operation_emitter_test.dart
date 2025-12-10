@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:gql/ast.dart';
 import 'package:gql/language.dart';
 import 'package:shazam/src/config.dart';
-import 'package:shazam/src/document_ir.dart';
 import 'package:shazam/src/emitters/operation_emitter.dart';
 import 'package:shazam/src/naming_helper.dart';
 import 'package:test/test.dart';
@@ -34,7 +33,7 @@ void main() {
 
       final result = emitter.operationConst('Fetch', node);
 
-      expect(result, contains('const GqlFetchOperation = r\'\'\''));
+      expect(result, contains("const GqlFetchOperation = r'''"));
       expect(result, contains('query Fetch'));
     });
 
@@ -47,7 +46,7 @@ void main() {
 
       expect(result, contains('GqlDoThingOperationCompressed'));
       expect(result, contains('String get GqlDoThingOperation'));
-      final encoded = RegExp(r"= '([^']+)';").firstMatch(result)!.group(1)!;
+      final encoded = RegExp("= '([^']+)';").firstMatch(result)!.group(1)!;
       expect(base64Decode(encoded), isNotEmpty);
     });
 

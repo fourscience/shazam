@@ -16,11 +16,14 @@ class FragmentBuilder {
 
   final Map<String, FragmentIr> fragments = {};
   final Map<String, FragmentDefinitionNode> fragmentDefinitions = {};
+  final Map<String, String> definitionOrigins = {};
 
   void indexDefinitions(DocumentSource source) {
     for (final def in source.document.definitions) {
       if (def is FragmentDefinitionNode) {
-        fragmentDefinitions[_pref(def.name.value)] = def;
+        final name = _pref(def.name.value);
+        fragmentDefinitions[name] = def;
+        definitionOrigins.putIfAbsent(name, () => source.path);
       }
     }
   }
@@ -66,8 +69,13 @@ class FragmentBuilder {
         }
       }
     }
-    final frag =
-        FragmentIr(name: name, node: def, record: record, dependencies: deps);
+    final frag = FragmentIr(
+      name: name,
+      node: def,
+      record: record,
+      dependencies: deps,
+      originPath: definitionOrigins[name] ?? '',
+    );
     fragments[name] = frag;
     context.cache.fragments[name] = frag;
     return frag;

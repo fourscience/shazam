@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:gql/ast.dart';
+import 'package:code_builder/code_builder.dart';
 import 'package:gql/language.dart';
 import 'package:shazam/src/codegen_pipeline.dart';
 import 'package:shazam/src/config.dart';
@@ -8,8 +8,9 @@ import 'package:shazam/src/document_ir.dart';
 import 'package:shazam/src/generator_plugin.dart';
 import 'package:shazam/src/operations_loader.dart';
 import 'package:shazam/src/renderer.dart';
+import 'package:shazam/src/schema.dart';
+import 'package:shazam/src/schema_index.dart';
 import 'package:test/test.dart';
-import 'package:code_builder/code_builder.dart';
 
 Config _config(String schemaPath, String inputDir) => Config(
       outputDir: 'out',
@@ -38,6 +39,10 @@ class _FakeRenderer implements Renderer {
     lastConfig = config;
     lastPlugins = plugins;
   }
+
+  @override
+  Future<void> renderShared(
+      DocumentIr ir, Config config, List<PluginRegistration> plugins) async {}
 }
 
 class _FakeLoader implements OperationsLoader {
@@ -95,16 +100,15 @@ void main() {
     final first = _docSource('query A { __typename }', path: 'a.graphql');
     final second = _docSource('fragment Foo on Query { __typename }',
         path: 'b.graphql');
+    final schema = SchemaContext(
+      schema: Schema.parse('type Query { noop: String }'),
+      index: SchemaIndex(Schema.parse('type Query { noop: String }')),
+    );
+    final irs = pipeline.buildAll([first, second], schema);
 
-    final merged = pipeline.mergeDocuments([first, second]);
-
-    expect(merged.path, cfg.schemaPath);
-    expect(merged.document.definitions, hasLength(2));
-    expect(
-        merged.document.definitions.whereType<OperationDefinitionNode>(),
-        hasLength(1));
-    expect(merged.document.definitions.whereType<FragmentDefinitionNode>(),
-        hasLength(1));
+    expect(irs, hasLength(2));
+    expect(irs.first.path, 'a.graphql');
+    expect(irs.last.path, 'b.graphql');
   });
 
   test('render delegates to renderer with provided plugins', () async {
@@ -133,6 +137,8 @@ void main() {
       interfaceImplementations: const {},
       unionVariants: const {},
       enums: const [],
+      operationOrigins: const {},
+      fragmentOrigins: const {},
     );
 
     await pipeline.render(ir);

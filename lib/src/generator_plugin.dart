@@ -86,7 +86,7 @@ abstract class GeneratorPlugin {
 
 /// Context passed to plugins with useful metadata about the render operation.
 class RenderContext {
-  RenderContext({required this.outputRoot, required this.config});
+  const RenderContext({required this.outputRoot, required this.config});
 
   /// Directory where outputs are written for the current document.
   final String outputRoot;

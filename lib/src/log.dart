@@ -29,7 +29,7 @@ Logger _buildLogger(Level level) => Logger(
 Level _toLoggerLevel(LogLevel level) {
   switch (level) {
     case LogLevel.verbose:
-      return Level.verbose;
+      return Level.trace;
     case LogLevel.info:
       return Level.info;
     case LogLevel.warning:
@@ -37,6 +37,6 @@ Level _toLoggerLevel(LogLevel level) {
     case LogLevel.error:
       return Level.error;
     case LogLevel.none:
-      return Level.nothing;
+      return Level.off;
   }
 }

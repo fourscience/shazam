@@ -61,9 +61,12 @@ class Generator {
         return;
       }
 
-      final merged = pipeline.mergeDocuments(operations.documents);
-      final ir = pipeline.buildIr(merged, schemaCtx);
-      await pipeline.render(ir);
+      final irs = pipeline.buildAll(operations.documents, schemaCtx);
+      for (final ir in irs) {
+        await pipeline.render(ir);
+      }
+      final merged = _mergeIrs(irs);
+      await pipeline.renderShared(merged);
 
       logInfo('Build completed');
     } catch (e) {
@@ -78,4 +81,48 @@ class Generator {
   static OperationsLoader _defaultOperationsLoaderFactory(String inputDir) =>
       OperationsLoader(inputDir: inputDir);
   static IrCache _defaultCacheFactory() => IrCache();
+
+  DocumentIr _mergeIrs(List<DocumentIr> irs) {
+    final opOrigins = <String, String>{};
+    final fragOrigins = <String, String>{};
+    final operations = <OperationIr>[];
+    final fragments = <FragmentIr>[];
+    final records = <String, RecordIr>{};
+    final enums = <String, EnumIr>{};
+    final interfaceImpls = <String, Set<String>>{};
+    final unionVariants = <String, Set<String>>{};
+
+    void mergeSet(Map<String, Set<String>> target, Map<String, Set<String>> src) {
+      for (final entry in src.entries) {
+        target.putIfAbsent(entry.key, () => <String>{}).addAll(entry.value);
+      }
+    }
+
+    for (final ir in irs) {
+      operations.addAll(ir.operations);
+      fragments.addAll(ir.fragments);
+      opOrigins.addAll(ir.operationOrigins);
+      fragOrigins.addAll(ir.fragmentOrigins);
+      for (final record in ir.records) {
+        records.putIfAbsent(record.name, () => record);
+      }
+      for (final enm in ir.enums) {
+        enums.putIfAbsent(enm.name, () => enm);
+      }
+      mergeSet(interfaceImpls, ir.interfaceImplementations);
+      mergeSet(unionVariants, ir.unionVariants);
+    }
+
+    return DocumentIr(
+      path: config.schemaPath,
+      operations: operations,
+      fragments: fragments,
+      records: records.values.toList(),
+      interfaceImplementations: interfaceImpls,
+      unionVariants: unionVariants,
+      enums: enums.values.toList(),
+      operationOrigins: opOrigins,
+      fragmentOrigins: fragOrigins,
+    );
+  }
 }

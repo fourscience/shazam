@@ -22,13 +22,19 @@ class OperationEmitter {
     required Iterable<String> fragments,
     required String schemaImport,
     required Map<String, ScalarConfig> scalarTypes,
+    Map<String, String>? fragmentImportPaths,
+    String fragmentsPrefix = '../fragments/',
+    String helpersImport = '../graphql.g.dart',
   }) {
     return [
-      if (config.compressQueries) Directive.import('../helpers.dart'),
+      if (config.compressQueries) Directive.import(helpersImport),
       Directive.import(schemaImport),
       ...importsForRecords(ownedRecords, fragmentRecordOwners,
-          prefix: '../fragments/'),
-      ...fragments.map((f) => Directive.import('../fragments/$f.dart')),
+          prefix: fragmentsPrefix, fragmentImportPaths: fragmentImportPaths),
+      ...fragments.map((f) {
+        final path = fragmentImportPaths?[f] ?? '../fragments/$f.dart';
+        return Directive.import(path);
+      }),
       ...scalarImportsForRecords(ownedRecords, scalarTypes),
     ];
   }
@@ -121,7 +127,8 @@ $recordType $parseName(Map<String, dynamic> json) => deserialize$recordType(json
 
   List<Directive> importsForRecords(
       List<RecordIr> records, Map<String, String?> fragmentRecordOwners,
-      {String prefix = 'fragments/'}) {
+      {String prefix = 'fragments/',
+      Map<String, String>? fragmentImportPaths}) {
     final owners = <String>{};
 
     String? resolveOwner(String type) {
@@ -136,7 +143,12 @@ $recordType $parseName(Map<String, dynamic> json) => deserialize$recordType(json
       }
     }
 
-    return owners.map((o) => Directive.import('$prefix$o.dart')).toList();
+    return owners
+        .map((o) => Directive.import(
+            fragmentImportPaths != null && fragmentImportPaths.containsKey(o)
+                ? fragmentImportPaths[o]!
+                : '$prefix$o.dart'))
+        .toList();
   }
 
   List<Directive> scalarImportsForRecords(
