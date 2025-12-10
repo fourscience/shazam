@@ -7,12 +7,12 @@ import 'package:gql/ast.dart';
 import 'package:gql/language.dart';
 import 'package:path/path.dart' as p;
 import 'package:shazam/src/config.dart';
-import 'package:shazam/src/document_ir.dart';
 import 'package:shazam/src/emitters/enum_emitter.dart';
 import 'package:shazam/src/emitters/operation_emitter.dart';
 import 'package:shazam/src/emitters/record_emitter.dart';
 import 'package:shazam/src/emitters/serializer_emitter.dart';
 import 'package:shazam/src/generator_plugin.dart';
+import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/log.dart';
 import 'package:shazam/src/naming_helper.dart';
 

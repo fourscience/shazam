@@ -1,6 +1,6 @@
 import 'package:shazam/src/config.dart';
-import 'package:shazam/src/document_ir.dart';
 import 'package:shazam/src/generator_plugin.dart';
+import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/operations_loader.dart';
 import 'package:shazam/src/renderer.dart';
 

@@ -3,7 +3,7 @@ import 'package:shazam/src/builders/input_builder.dart';
 import 'package:shazam/src/builders/ir_build_context.dart';
 import 'package:shazam/src/builders/operation_builder.dart';
 import 'package:shazam/src/builders/record_builder.dart';
-import 'package:shazam/src/document_ir.dart';
+import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/naming_helper.dart';
 import 'package:shazam/src/operations_loader.dart';
 

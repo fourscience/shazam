@@ -7,7 +7,7 @@ import 'package:gql/ast.dart';
 import 'package:gql/language.dart';
 
 import 'package:shazam/src/config.dart';
-import 'package:shazam/src/document_ir.dart';
+import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/naming_helper.dart';
 
 class OperationEmitter {

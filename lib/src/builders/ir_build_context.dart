@@ -1,5 +1,5 @@
 import 'package:shazam/src/config.dart';
-import 'package:shazam/src/document_ir.dart';
+import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/schema.dart';
 import 'package:shazam/src/schema_doc_helper.dart';
 import 'package:shazam/src/schema_index.dart';

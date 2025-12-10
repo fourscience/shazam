@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:gql/ast.dart';
 import 'package:shazam/src/builders/ir_build_context.dart';
-import 'package:shazam/src/document_ir.dart';
+import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/naming_helper.dart';
 import 'package:shazam/src/schema.dart';
 
