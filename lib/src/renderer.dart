@@ -304,6 +304,7 @@ bool isTypeOf(dynamic record, String target) {
       buffer.writeln("  '$key': $parseName,");
     }
     buffer.writeln('};');
+    
     buffer.writeln(
         'dynamic Function(Map<String, dynamic>)? resolveParser(String key) => responseParsers[key];');
     return buffer.toString();
@@ -431,7 +432,7 @@ bool isTypeOf(dynamic record, String target) {
     final source = library.accept(emitter).toString();
     String formatted;
     try {
-      formatted = DartFormatter().format(source);
+      formatted = DartFormatter(languageVersion: DartFormatter.latestLanguageVersion).format(source);
     } on FormatterException catch (e) {
       await File('$path.raw').writeAsString(source);
       logError('Formatting failed for $path: ${e.message()}');

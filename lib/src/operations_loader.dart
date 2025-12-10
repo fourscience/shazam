@@ -26,9 +26,7 @@ class OperationsLoader {
       return result;
     }
     await for (final entity in dir.list(recursive: true)) {
-      if (entity is File &&
-          p.extension(entity.path) == '.graphql' &&
-          p.normalize(p.dirname(entity.path)) == p.normalize(inputDir)) {
+      if (entity is File && p.extension(entity.path) == '.graphql') {
         result.add(entity.path);
       }
     }

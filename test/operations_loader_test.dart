@@ -5,7 +5,7 @@ import 'package:shazam/src/operations_loader.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('OperationsLoader reads only top-level .graphql files', () async {
+  test('OperationsLoader reads .graphql files recursively', () async {
     final dir = await Directory.systemTemp.createTemp('ops_loader_');
     addTearDown(() => dir.delete(recursive: true));
 
@@ -18,8 +18,9 @@ void main() {
     final loader = OperationsLoader(inputDir: dir.path);
     final bundle = await loader.load();
 
-    expect(bundle.documents, hasLength(1));
-    expect(bundle.documents.first.path, rootFile.path);
+    expect(bundle.documents, hasLength(2));
+    final paths = bundle.documents.map((d) => d.path).toSet();
+    expect(paths, containsAll([rootFile.path, p.join(dir.path, 'nested', 'ignored.graphql')]));
   });
 
   test('OperationsLoader returns empty bundle when directory is missing',
