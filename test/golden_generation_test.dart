@@ -30,6 +30,7 @@ void main() {
       configPath: 'config.yaml',
       keywordReplacements: const {},
       pluginPaths: const [],
+      logLevel: LogLevel.info,
     );
 
     final generator = Generator(config);

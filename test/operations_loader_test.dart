@@ -21,4 +21,12 @@ void main() {
     expect(bundle.documents, hasLength(1));
     expect(bundle.documents.first.path, rootFile.path);
   });
+
+  test('OperationsLoader returns empty bundle when directory is missing',
+      () async {
+    final loader = OperationsLoader(inputDir: '/path/does/not/exist');
+    final bundle = await loader.load();
+
+    expect(bundle.documents, isEmpty);
+  });
 }

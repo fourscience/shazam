@@ -16,6 +16,7 @@ class Config {
     required this.configPath,
     required this.keywordReplacements,
     required this.pluginPaths,
+    this.logLevel = LogLevel.info,
   });
 
   final String outputDir;
@@ -29,6 +30,7 @@ class Config {
   final Map<String, ScalarConfig> scalarMapping;
   final Map<String, String> keywordReplacements;
   final List<String> pluginPaths;
+  final LogLevel logLevel;
 
   // ignore: sort_constructors_first, reason: 'Placed near the primary constructor for readability.'
   factory Config._default() => Config(
@@ -43,6 +45,7 @@ class Config {
         configPath: 'config.yaml',
         keywordReplacements: const {},
         pluginPaths: const [],
+        logLevel: LogLevel.info,
       );
 
   static Future<Config> load(File file) async {
@@ -73,6 +76,7 @@ class Config {
     final pluginPaths = pluginSection == null
         ? const <String>[]
         : pluginSection.cast<String>().toList();
+    final logLevel = _parseLogLevel(doc['log_level'] as String?);
 
     final cfg = Config(
       outputDir: doc['output_dir'] as String? ?? 'generated',
@@ -89,6 +93,7 @@ class Config {
           .map((path) =>
               p.isAbsolute(path) ? path : p.normalize(p.join(configDir, path)))
           .toList(),
+      logLevel: logLevel,
     );
     cfg._validate();
     return cfg;
@@ -101,6 +106,24 @@ class Config {
       case 'required':
       default:
         return NullableMode.required;
+    }
+  }
+
+  static LogLevel _parseLogLevel(String? value) {
+    switch (value?.toLowerCase()) {
+      case 'verbose':
+        return LogLevel.verbose;
+      case 'warn':
+      case 'warning':
+        return LogLevel.warning;
+      case 'error':
+        return LogLevel.error;
+      case 'none':
+      case 'off':
+        return LogLevel.none;
+      case 'info':
+      default:
+        return LogLevel.info;
     }
   }
 
@@ -227,6 +250,8 @@ class Config {
 }
 
 enum NullableMode { required, optional }
+
+enum LogLevel { verbose, info, warning, error, none }
 
 class ScalarConfig {
   const ScalarConfig({required this.symbol, this.import});

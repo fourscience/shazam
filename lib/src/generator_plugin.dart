@@ -5,6 +5,62 @@ import 'package:shazam/src/document_ir.dart';
 /// Bump when breaking changes are made to [DocumentIr] or related models.
 const irSchemaVersion = '1.0.0';
 
+/// Declares what a plugin can do and any optional filters.
+class PluginManifest {
+  const PluginManifest({
+    required this.id,
+    required this.version,
+    this.capabilities = const [
+      PluginCapability.document,
+      PluginCapability.library,
+      PluginCapability.renderComplete,
+    ],
+    this.operationFilter,
+    this.fragmentFilter,
+    this.requiresSandbox = false,
+  });
+
+  /// Unique identifier for the plugin (e.g., package name).
+  final String id;
+
+  /// Plugin implementation version (semantic preferred).
+  final String version;
+
+  /// Hooks this plugin implements.
+  final List<PluginCapability> capabilities;
+
+  /// If provided, restricts callbacks to operations whose names match.
+  final RegExp? operationFilter;
+
+  /// If provided, restricts callbacks to fragments whose names match.
+  final RegExp? fragmentFilter;
+
+  /// Indicates the plugin expects to run in an isolate/sandbox.
+  final bool requiresSandbox;
+
+  bool allowsOperation(String name) =>
+      operationFilter == null || operationFilter!.hasMatch(name);
+
+  bool allowsFragment(String name) =>
+      fragmentFilter == null || fragmentFilter!.hasMatch(name);
+}
+
+enum PluginCapability { document, library, renderComplete }
+
+class PluginServices {
+  const PluginServices({required this.logInfo, required this.logWarn});
+
+  final void Function(String message) logInfo;
+  final void Function(String message) logWarn;
+}
+
+class PluginRegistration {
+  const PluginRegistration({required this.plugin, required this.manifest});
+
+  final GeneratorPlugin plugin;
+  final PluginManifest manifest;
+}
+
 /// Extension point for custom behavior in the generation pipeline.
 /// Plugins may:
 /// - read IR to make decisions
@@ -45,12 +101,21 @@ class CodegenContext {
     required this.ir,
     required this.render,
     required this.config,
+    this.services = const PluginServices(
+      logInfo: _defaultLogInfo,
+      logWarn: _defaultLogWarn,
+    ),
   });
 
   final DocumentIr ir;
   final RenderContext render;
   final Object config;
+  final PluginServices services;
 }
+
+void _defaultLogInfo(String msg) {}
+
+void _defaultLogWarn(String msg) {}
 
 /// Example plugin that injects a comment into every generated library:
 ///

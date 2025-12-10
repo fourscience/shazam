@@ -14,13 +14,14 @@ import 'package:shazam/src/log.dart';
 class PluginLoader {
   const PluginLoader();
 
-  Future<List<GeneratorPlugin>> load(Config config) async {
-    final loaded = <GeneratorPlugin>[];
+  Future<List<PluginRegistration>> load(Config config) async {
+    final loaded = <PluginRegistration>[];
     for (final path in config.pluginPaths) {
       final pluginUri = _toUri(path);
       try {
         final lib = await currentMirrorSystem().isolate.loadUri(pluginUri);
-        final plugins = await _pluginsFromLibrary(lib);
+        final manifest = _manifestFromLibrary(lib, path);
+        final plugins = await _pluginsFromLibrary(lib, manifest);
         loaded.addAll(plugins);
         logInfo('Loaded ${plugins.length} plugin(s) from $path');
       } catch (e, st) {
@@ -38,8 +39,8 @@ class PluginLoader {
     return Uri.file(normalized);
   }
 
-  Future<List<GeneratorPlugin>> _pluginsFromLibrary(
-      LibraryMirror library) async {
+  Future<List<PluginRegistration>> _pluginsFromLibrary(
+      LibraryMirror library, PluginManifest manifest) async {
     final candidates = <Symbol>[
       const Symbol('plugins'),
       const Symbol('plugin'),
@@ -51,7 +52,9 @@ class PluginLoader {
       final value = library.getField(symbol).reflectee;
       final plugins = await _asPlugins(value);
       if (plugins != null) {
-        return plugins;
+        return plugins
+            .map((p) => PluginRegistration(plugin: p, manifest: manifest))
+            .toList();
       }
     }
     throw StateError(
@@ -74,5 +77,30 @@ class PluginLoader {
       return _asPlugins(result);
     }
     return null;
+  }
+
+  PluginManifest _manifestFromLibrary(LibraryMirror library, String path) {
+    final candidates = <Symbol>[
+      const Symbol('pluginManifest'),
+      const Symbol('shazamPluginManifest'),
+    ];
+    for (final symbol in candidates) {
+      if (!library.declarations.containsKey(symbol)) continue;
+      final reflect = library.getField(symbol);
+      final reflectee = reflect.reflectee;
+      if (reflectee is PluginManifest) {
+        return reflectee;
+      }
+      if (reflectee is Function) {
+        final result = reflectee();
+        if (result is PluginManifest) {
+          return result;
+        }
+      }
+    }
+    return PluginManifest(
+      id: p.basenameWithoutExtension(path),
+      version: '0.0.0',
+    );
   }
 }

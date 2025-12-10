@@ -18,7 +18,7 @@ class Generator {
   /// factory parameters, which default to the built-in implementations.
   Generator(
     this.config, {
-    List<GeneratorPlugin>? plugins,
+    List<PluginRegistration>? plugins,
     Renderer? renderer,
     IrCache? cache,
     OperationsLoader? operationsLoader,
@@ -34,13 +34,14 @@ class Generator {
             operationsLoader ?? operationsLoaderFactory(config.inputDir);
 
   final Config config;
-  final List<GeneratorPlugin> plugins;
+  final List<PluginRegistration> plugins;
   final Renderer renderer;
   final IrCache cache;
   final OperationsLoader operationsLoader;
   final PluginLoader pluginLoader;
 
   Future<void> build() async {
+    configureLogging(config.logLevel);
     final activePlugins =
         plugins.isNotEmpty ? plugins : await pluginLoader.load(config);
     final pipeline = CodegenPipeline(

@@ -1,2 +1,2 @@
 // Generated schema types
-enum GqlStatus { pending, succeFul, failure, inprogre }
+enum GqlStatus { pending, successful, failure, inprogress }

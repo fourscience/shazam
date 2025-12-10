@@ -27,7 +27,7 @@ class CodegenPipeline {
 
   final Config config;
   final Renderer renderer;
-  final List<GeneratorPlugin> plugins;
+  final List<PluginRegistration> plugins;
   final IrCache cache;
   final OperationsLoader operationsLoader;
 

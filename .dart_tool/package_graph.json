@@ -13,6 +13,7 @@
         "collection",
         "dart_style",
         "gql",
+        "logger",
         "path",
         "watcher",
         "yaml"
@@ -86,6 +87,13 @@
       "name": "path",
       "version": "1.9.1",
       "dependencies": []
+    },
+    {
+      "name": "logger",
+      "version": "2.6.2",
+      "dependencies": [
+        "meta"
+      ]
     },
     {
       "name": "gql",

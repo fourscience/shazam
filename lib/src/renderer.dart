@@ -19,7 +19,7 @@ import 'package:shazam/src/naming_helper.dart';
 /// Contract for rendering a document IR into generated outputs.
 abstract class Renderer {
   Future<void> render(
-      DocumentIr ir, Config config, List<GeneratorPlugin> plugins);
+      DocumentIr ir, Config config, List<PluginRegistration> plugins);
 }
 
 /// Default renderer that produces Dart files using code_builder.
@@ -44,20 +44,32 @@ class CodeRenderer implements Renderer {
 
   @override
   Future<void> render(
-      DocumentIr ir, Config _config, List<GeneratorPlugin> plugins) {
+      DocumentIr ir, Config _config, List<PluginRegistration> plugins) {
     return _emitDocument(ir, plugins);
   }
 
   Future<void> _emitDocument(
-      DocumentIr ir, List<GeneratorPlugin> plugins) async {
+      DocumentIr ir, List<PluginRegistration> plugins) async {
     final outRoot = _outputRootFor(ir.path);
     final renderCtx = RenderContext(outputRoot: outRoot, config: config);
-    final pluginCtx =
-        CodegenContext(ir: ir, render: renderCtx, config: config);
+    final pluginCtx = CodegenContext(
+      ir: ir,
+      render: renderCtx,
+      config: config,
+      services: PluginServices(logInfo: logInfo, logWarn: logWarn),
+    );
     final scalarBySymbol = _scalarBySymbol;
 
-    for (final plugin in plugins) {
-      plugin.onDocument(pluginCtx);
+    for (final registration in plugins) {
+      final manifest = registration.manifest;
+      if (!manifest.capabilities.contains(PluginCapability.document)) continue;
+      final hasMatchingOperation = ir.operations
+          .any((op) => manifest.allowsOperation(op.name));
+      final hasMatchingFragment =
+          ir.fragments.any((frag) => manifest.allowsFragment(frag.name));
+      if (manifest.operationFilter != null && !hasMatchingOperation) continue;
+      if (manifest.fragmentFilter != null && !hasMatchingFragment) continue;
+      registration.plugin.onDocument(pluginCtx);
     }
     final operationsDir = Directory(p.join(outRoot, 'operations'))
       ..createSync(recursive: true);
@@ -119,11 +131,14 @@ class CodeRenderer implements Renderer {
             '\n${_operationEmitter.operationRequest(op.name, op.variableRecord?.name, op.variableDefaults)}'))
         ..body.add(Code('\n${_operationEmitter.operationParse(op)}'));
       for (final record in opOwned) {
-      builder.body
-          .addAll(_recordEmitter.emitRecord(record, recordNames, enumNames));
+        builder.body
+            .addAll(_recordEmitter.emitRecord(record, recordNames, enumNames));
       }
-      for (final plugin in plugins) {
-        plugin.onLibrary(builder, pluginCtx);
+      final eligible = plugins.where((p) =>
+          p.manifest.capabilities.contains(PluginCapability.library) &&
+          p.manifest.allowsOperation(op.name));
+      for (final plugin in eligible) {
+        plugin.plugin.onLibrary(builder, pluginCtx);
       }
       await _writeLibrary(
           p.join(operationsDir.path, '${op.name}.dart'), builder.build());
@@ -145,8 +160,11 @@ class CodeRenderer implements Renderer {
         builder.body
             .addAll(_recordEmitter.emitRecord(record, recordNames, enumNames));
       }
-      for (final plugin in plugins) {
-        plugin.onLibrary(builder, pluginCtx);
+      final eligible = plugins.where((p) =>
+          p.manifest.capabilities.contains(PluginCapability.library) &&
+          p.manifest.allowsFragment(frag.name));
+      for (final plugin in eligible) {
+        plugin.plugin.onLibrary(builder, pluginCtx);
       }
       await _writeLibrary(
           p.join(fragmentsDir.path, '${frag.name}.dart'), builder.build());
@@ -179,7 +197,9 @@ class CodeRenderer implements Renderer {
         .add(Code("export '${p.relative(_schemaLibPath, from: outRoot)}';"));
     await _writeLibrary(p.join(outRoot, 'index.dart'), indexBuilder.build());
     for (final plugin in plugins) {
-      plugin.onRenderComplete(pluginCtx);
+      if (!plugin.manifest.capabilities
+          .contains(PluginCapability.renderComplete)) continue;
+      plugin.plugin.onRenderComplete(pluginCtx);
     }
     logInfo('Wrote outputs to $outRoot');
   }

@@ -27,7 +27,7 @@ class FakeRenderer implements Renderer {
   Future<void> render(
     DocumentIr ir,
     Config config,
-    List<GeneratorPlugin> plugins,
+    List<PluginRegistration> plugins,
   ) async {
     rendered = true;
   }
