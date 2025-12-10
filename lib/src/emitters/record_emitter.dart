@@ -1,16 +1,20 @@
 import 'package:code_builder/code_builder.dart';
 import 'package:shazam/src/alias_helper.dart';
+import 'package:shazam/src/emitters/emitter.dart';
 import 'package:shazam/src/emitters/serializer_emitter.dart';
 import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/naming_helper.dart';
 
-class RecordEmitter {
+class RecordEmitter implements Emitter<List<Spec>> {
   RecordEmitter(this.typeHelper, this.serializer)
       : aliasHelper = const AliasHelper();
 
   final TypeHelper typeHelper;
   final SerializerEmitter serializer;
   final AliasHelper aliasHelper;
+
+  @override
+  List<Spec> emit() => const [];
 
   List<Spec> emitRecord(
       RecordIr record, Set<String> recordNames, Set<String> enumNames) {

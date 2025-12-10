@@ -1,3 +1,4 @@
+import 'package:shazam/src/builders/builder.dart';
 import 'package:shazam/src/builders/fragment_builder.dart';
 import 'package:shazam/src/builders/input_builder.dart';
 import 'package:shazam/src/builders/ir_build_context.dart';
@@ -8,7 +9,7 @@ import 'package:shazam/src/naming_helper.dart';
 import 'package:shazam/src/operations_loader.dart';
 
 /// High-level coordinator to build a complete Document IR from a parsed source.
-class DocumentIrBuilder {
+class DocumentIrBuilder with Builder<DocumentIr, DocumentSource> {
   DocumentIrBuilder(this.context)
       : naming = NamingHelper(context.config),
         typeHelper = const TypeHelper();
@@ -17,6 +18,7 @@ class DocumentIrBuilder {
   final NamingHelper naming;
   final TypeHelper typeHelper;
 
+  @override
   DocumentIr build(DocumentSource source,
       {Iterable<DocumentSource> allSources = const []}) {
     late final RecordBuilder recordBuilder;

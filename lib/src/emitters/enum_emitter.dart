@@ -1,8 +1,14 @@
 import 'package:code_builder/code_builder.dart';
 
+import 'package:shazam/src/emitters/emitter.dart';
 import 'package:shazam/src/ir/ir.dart';
 
-class EnumEmitter {
+class EnumEmitter implements Emitter<Spec> {
+  @override
+  Spec emit() {
+    throw UnimplementedError('Use emitEnum to provide EnumIr');
+  }
+
   Spec emitEnum(EnumIr enm) {
     return Enum((b) {
       b

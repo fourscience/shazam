@@ -1,12 +1,14 @@
 import 'package:gql/ast.dart';
+import 'package:shazam/src/builders/builder.dart';
 import 'package:shazam/src/builders/ir_build_context.dart';
+import 'package:shazam/src/builders/record_build_input.dart';
 import 'package:shazam/src/builders/record_builder.dart';
 import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/naming_helper.dart';
 import 'package:shazam/src/operations_loader.dart';
 
 /// Builds fragments and caches them for reuse.
-class FragmentBuilder {
+class FragmentBuilder with Builder<FragmentIr, String> {
   FragmentBuilder(this.context, this.recordBuilder)
       : naming = NamingHelper(context.config);
 
@@ -28,6 +30,7 @@ class FragmentBuilder {
     }
   }
 
+  @override
   FragmentIr build(String name) {
     if (fragments.containsKey(name)) return fragments[name]!;
     if (context.cache.fragments.containsKey(name)) {
@@ -41,12 +44,12 @@ class FragmentBuilder {
     final deps = _collectDeps(def.selectionSet);
     late final RecordIr record;
     try {
-      record = recordBuilder.build(
+      record = recordBuilder.build(RecordBuildInput(
         rootType: def.typeCondition.on.name.value,
         selection: def.selectionSet,
         name: name,
         owner: name,
-      );
+      ));
     } catch (e, st) {
       Error.throwWithStackTrace(
         StateError(

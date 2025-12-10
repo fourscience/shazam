@@ -1,11 +1,15 @@
 import 'package:shazam/src/config.dart';
+import 'package:shazam/src/emitters/emitter.dart';
 import 'package:shazam/src/naming_helper.dart';
 
-class SerializerEmitter {
+class SerializerEmitter implements Emitter<String> {
   SerializerEmitter(this.typeHelper, this.scalarTypes);
 
   final TypeHelper typeHelper;
   final Map<String, ScalarConfig> scalarTypes;
+
+  @override
+  String emit() => '';
 
   String deserializeForType(
     String type,

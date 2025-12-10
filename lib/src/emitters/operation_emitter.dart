@@ -5,16 +5,19 @@ import 'package:change_case/change_case.dart';
 import 'package:code_builder/code_builder.dart';
 import 'package:gql/ast.dart';
 import 'package:gql/language.dart';
-
 import 'package:shazam/src/config.dart';
+import 'package:shazam/src/emitters/emitter.dart';
 import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/naming_helper.dart';
 
-class OperationEmitter {
+class OperationEmitter implements Emitter<String> {
   OperationEmitter(this.config, this.typeHelper);
 
   final Config config;
   final TypeHelper typeHelper;
+
+  @override
+  String emit() => '';
 
   List<Directive> directivesForOperation({
     required List<RecordIr> ownedRecords,

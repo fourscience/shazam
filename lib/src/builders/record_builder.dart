@@ -1,12 +1,14 @@
 import 'package:collection/collection.dart';
 import 'package:gql/ast.dart';
+import 'package:shazam/src/builders/builder.dart';
 import 'package:shazam/src/builders/ir_build_context.dart';
+import 'package:shazam/src/builders/record_build_input.dart';
 import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/naming_helper.dart';
 import 'package:shazam/src/schema.dart';
 
 /// Builds record IRs (typedef shapes) with caching and schema-aware lookups.
-class RecordBuilder {
+class RecordBuilder with Builder<RecordIr, RecordBuildInput> {
   RecordBuilder(this.context, {this.resolveFragment})
       : naming = NamingHelper(context.config);
 
@@ -16,29 +18,26 @@ class RecordBuilder {
 
   final Map<String, RecordIr> records = {};
 
-  RecordIr build({
-    required String rootType,
-    required SelectionSetNode selection,
-    required String name,
-    String? owner,
-  }) {
-    if (context.cache.records.containsKey(name)) {
-      records[name] = context.cache.records[name]!;
-      return context.cache.records[name]!;
+  @override
+  RecordIr build(RecordBuildInput input) {
+    final cacheKey = input.name;
+    if (context.cache.records.containsKey(cacheKey)) {
+      records[cacheKey] = context.cache.records[cacheKey]!;
+      return context.cache.records[cacheKey]!;
     }
-    if (records.containsKey(name)) return records[name]!;
+    if (records.containsKey(cacheKey)) return records[cacheKey]!;
     final spec = RecordIr(
-      name: name,
+      name: input.name,
       fields: {},
-      owner: owner,
+      owner: input.owner,
       variants: {},
-      description: context.docs.typeDescription(rootType),
+      description: context.docs.typeDescription(input.rootType),
     );
-    records[name] = spec;
+    records[cacheKey] = spec;
 
-    final parentFields = _fieldsFor(rootType);
+    final parentFields = _fieldsFor(input.rootType);
 
-    for (final sel in selection.selections) {
+    for (final sel in input.selection.selections) {
       if (sel is FieldNode) {
         final jsonKey = sel.alias?.value ?? sel.name.value;
         final rawName = sel.name.value == '__typename' ? 'typeName' : jsonKey;
@@ -46,8 +45,7 @@ class RecordBuilder {
         final fieldDef = parentFields
             ?.firstWhereOrNull((f) => f.name.value == sel.name.value);
         if (fieldDef == null) {
-          // __typename is always a non-null String per spec, even when the
-          // parent type has no fields (e.g., unions).
+          // __typename is always a non-null String per spec.
           final field = FieldIr(
             name: fieldName,
             jsonKey: jsonKey,
@@ -65,7 +63,7 @@ class RecordBuilder {
           final dartType = _dartTypeFor(typeRef,
               hint: fieldDef.type, selectionRecordName: null);
           final fieldDescription =
-              context.docs.fieldDescription(rootType, sel.name.value);
+              context.docs.fieldDescription(input.rootType, sel.name.value);
           final field = FieldIr(
             name: fieldName,
             jsonKey: jsonKey,
@@ -79,105 +77,115 @@ class RecordBuilder {
           spec.fields[fieldName] = field;
           _maybeAddAlias(sel, field, spec);
         } else {
-          final nestedName = '${name}${naming.pascal(fieldName)}';
-          final namedType = _namedType(typeRef);
-          final nestedRecord = build(
-            rootType: namedType,
-            selection: sel.selectionSet!,
-            name: nestedName,
-            owner: owner,
+          final typeName =
+              _typeNameForSelection(typeRef, sel.selectionSet!, fieldDef.name);
+          final selection = sel.selectionSet!;
+          final selectionRecordName = _nestedName(
+            typeName,
+            selection,
+            typeRef.isList,
           );
-          final dartType = _wrapType(nestedRecord.name, typeRef);
-          final fieldDescription =
-              context.docs.fieldDescription(rootType, sel.name.value);
-          final field = FieldIr(
+          final nested = build(RecordBuildInput(
+            rootType: typeName,
+            selection: selection,
+            name: selectionRecordName,
+            owner: input.owner,
+          ));
+          spec.fields[fieldName] = FieldIr(
             name: fieldName,
             jsonKey: jsonKey,
             sourceName: sel.name.value,
-            type: dartType,
+            type: nested.name,
             nullable: !typeRef.isNonNull,
             thunkTarget: null,
-            description: fieldDescription ?? fieldDef.description?.value,
+            description: fieldDef.description?.value,
             defaultValue: null,
           );
-          spec.fields[fieldName] = field;
-          _maybeAddAlias(sel, field, spec);
+          _maybeAddAlias(sel, spec.fields[fieldName]!, spec);
         }
       } else if (sel is FragmentSpreadNode) {
         final fragName = _pref(sel.name.value);
-        final fragRecord = resolveFragment?.call(fragName);
-        if (fragRecord != null) {
-          for (final entry in fragRecord.fields.entries) {
-            spec.fields.putIfAbsent(entry.key, () => entry.value);
-            _maybeAddAliasFromField(entry.value, spec);
-          }
+        final frag = resolveFragment?.call(fragName);
+        if (frag != null) {
+          spec.fields.addAll(frag.fields);
+          spec.variants.add(input.owner);
         }
       } else if (sel is InlineFragmentNode) {
         final typeCondition = sel.typeCondition?.on.name.value;
-        if (typeCondition == null) {
+        if (typeCondition != null) {
+          final nestedName = _nestedName(
+            typeCondition,
+            sel.selectionSet,
+            true,
+          );
           final nested = build(
-              rootType: rootType, selection: sel.selectionSet, name: name);
-          for (final entry in nested.fields.entries) {
-            spec.fields.putIfAbsent(entry.key, () => entry.value);
-          }
-        } else if (_isUnionOrInterface(rootType)) {
-          final variantName = '${name}${naming.pascal(typeCondition)}';
-          final nested = build(
+            RecordBuildInput(
               rootType: typeCondition,
               selection: sel.selectionSet,
-              name: variantName,
-              owner: owner);
-          spec.variants.add(typeCondition);
-          final variantField = naming.sanitize(naming.camel(typeCondition));
-          spec.fields[variantField] = FieldIr(
-            name: variantField,
-            jsonKey: naming.camel(typeCondition),
-            sourceName: typeCondition,
-            type: '${nested.name}?',
-            nullable: true,
-            thunkTarget: null,
-            description: null,
-            defaultValue: null,
+              name: nestedName,
+              owner: input.owner,
+            ),
           );
+          for (final entry in nested.fields.entries) {
+            final existing = spec.fields[entry.key];
+            if (existing == null) {
+              spec.fields[entry.key] = entry.value;
+            }
+          }
         }
       }
     }
 
-    final hasTypename =
-        spec.fields.values.any((f) => f.jsonKey == '__typename');
-    if (!hasTypename) {
-      spec.fields['typeName'] = FieldIr(
-        name: 'typeName',
-        jsonKey: '__typename',
-        sourceName: '__typename',
-        type: 'String',
-        nullable: false,
-        thunkTarget: null,
-        description: null,
-        defaultValue: null,
-      );
-    }
+    spec.variants.add(input.owner);
 
-    context.cache.records[name] = spec;
     return spec;
   }
 
-  String _namedType(TypeRef ref) {
-    if (ref.name != null) return ref.name!;
-    if (ref.ofType != null) return _namedType(ref.ofType!);
-    return 'Unknown';
+  void _maybeAddAlias(SelectionNode sel, FieldIr field, RecordIr spec) {
+    if (sel is FieldNode && sel.alias != null && sel.alias!.value.isNotEmpty) {
+      spec.fields[sel.alias!.value] = field;
+    }
   }
+
+  String _nestedName(
+      String typeName, SelectionSetNode selectionSet, bool isList) {
+    final suffix = isList ? 'List' : '';
+    final selectionHash = selectionSet.hashCode.toUnsigned(32).toRadixString(16);
+    return '${context.config.namePrefix}${naming.pascal(typeName)}${suffix}_$selectionHash';
+  }
+
+  String _typeNameForSelection(
+      TypeRef ref, SelectionSetNode set, NameNode fieldName) {
+    if (ref.name != null) return ref.name!;
+    if (ref.ofType != null) {
+      return _typeNameForSelection(ref.ofType!, set, fieldName);
+    }
+    throw StateError('Unable to resolve type name for ${fieldName.value}');
+  }
+
+  Iterable<FieldDefinitionNode>? _fieldsFor(String typeName) {
+    final typeDef = context.schema.types[typeName] ??
+        context.schema.interfaces[typeName] ??
+        context.schema.unions[typeName];
+    if (typeDef is ObjectTypeDefinitionNode) return typeDef.fields;
+    if (typeDef is InterfaceTypeDefinitionNode) return typeDef.fields;
+    if (typeDef is UnionTypeDefinitionNode) return const [];
+    return null;
+  }
+
+  String _pref(String name) =>
+      '${context.config.namePrefix}${naming.pascal(name)}';
 
   String _dartTypeFor(TypeRef ref,
       {TypeNode? hint, String? selectionRecordName}) {
     if (ref.isNonNull && ref.name == null && ref.ofType != null) {
-      final inner = _dartTypeFor(ref.ofType!,
-          hint: hint, selectionRecordName: selectionRecordName);
+      final inner =
+          _dartTypeFor(ref.ofType!, hint: hint, selectionRecordName: selectionRecordName);
       return inner.endsWith('?') ? inner.substring(0, inner.length - 1) : inner;
     }
     if (ref.isList) {
-      final inner = _dartTypeFor(ref.ofType!,
-          hint: hint, selectionRecordName: selectionRecordName);
+      final inner =
+          _dartTypeFor(ref.ofType!, hint: hint, selectionRecordName: selectionRecordName);
       final listType = 'List<$inner>';
       return ref.isNonNull ? listType : '$listType?';
     }
@@ -202,69 +210,16 @@ class RecordBuilder {
           final enumName = _pref(base);
           return ref.isNonNull ? enumName : '$enumName?';
         }
-        final typeName = selectionRecordName ?? _pref(base);
+        if (context.schema.inputs.containsKey(base)) {
+          final nestedName = _pref(base);
+          return ref.isNonNull ? nestedName : '$nestedName?';
+        }
         if (context.schema.scalars.contains(base)) {
           return ref.isNonNull ? 'String' : 'String?';
         }
-        return ref.isNonNull ? typeName : '$typeName?';
+        return ref.isNonNull
+            ? selectionRecordName ?? base
+            : '${selectionRecordName ?? base}?';
     }
-  }
-
-  String _wrapType(String name, TypeRef ref) {
-    if (ref.isNonNull && ref.name == null && ref.ofType != null) {
-      final inner = _wrapType(name, ref.ofType!);
-      return inner.endsWith('?') ? inner.substring(0, inner.length - 1) : inner;
-    }
-    if (ref.isList) {
-      final inner = _wrapType(name, ref.ofType!);
-      final listType = 'List<$inner>';
-      return ref.isNonNull ? listType : '$listType?';
-    }
-    return ref.isNonNull ? name : '$name?';
-  }
-
-  String _pref(String name) =>
-      '${context.config.namePrefix}${naming.pascal(name)}';
-
-  bool _isUnionOrInterface(String typeName) =>
-      context.schemaIndex.isUnionOrInterface(typeName);
-
-  List<FieldDefinitionNode>? _fieldsFor(String typeName) =>
-      context.schemaIndex.fieldsFor(typeName);
-
-  void _maybeAddAliasFromField(FieldIr field, RecordIr spec) {
-    if (field.sourceName == field.jsonKey) return;
-    if (field.sourceName.startsWith('__')) return;
-    final originalName = naming.sanitize(field.sourceName);
-    if (spec.fields.containsKey(originalName)) return;
-    final aliasType = field.type;
-    spec.fields[originalName] = FieldIr(
-      name: originalName,
-      jsonKey: field.sourceName,
-      sourceName: field.jsonKey,
-      type: aliasType,
-      nullable: field.nullable,
-      thunkTarget: field.thunkTarget,
-      description: field.description,
-      defaultValue: field.defaultValue,
-    );
-  }
-
-  void _maybeAddAlias(FieldNode sel, FieldIr field, RecordIr spec) {
-    if (sel.alias == null) return;
-    if (sel.name.value.startsWith('__')) return;
-    final originalName = naming.sanitize(sel.name.value);
-    if (spec.fields.containsKey(originalName)) return;
-    final aliasType = field.type;
-    spec.fields[originalName] = FieldIr(
-      name: originalName,
-      jsonKey: sel.name.value,
-      sourceName: field.jsonKey,
-      type: aliasType,
-      nullable: field.nullable,
-      thunkTarget: field.thunkTarget,
-      description: field.description,
-      defaultValue: field.defaultValue,
-    );
   }
 }

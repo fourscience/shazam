@@ -1,27 +1,23 @@
 import 'package:gql/ast.dart';
 
+import 'package:shazam/src/builders/builder.dart';
 import 'package:shazam/src/builders/ir_build_context.dart';
 import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/naming_helper.dart';
 import 'package:shazam/src/schema.dart';
 
 /// Builds IR records for input objects, suffixing names with `Input`.
-class InputBuilder {
+class InputBuilder with Builder<RecordIr, InputObjectTypeDefinitionNode> {
   InputBuilder(this.context) : naming = NamingHelper(context.config);
 
   final IrBuildContext context;
   final NamingHelper naming;
 
   /// Build all input object records from the schema.
-  List<RecordIr> buildAll() {
-    final records = <RecordIr>[];
-    for (final entry in context.schema.inputs.entries) {
-      records.add(_buildForInput(entry.value));
-    }
-    return records;
-  }
+  List<RecordIr> buildAll() => collect(context.schema.inputs.values);
 
-  RecordIr _buildForInput(InputObjectTypeDefinitionNode input) {
+  @override
+  RecordIr build(InputObjectTypeDefinitionNode input) {
     final name = _inputTypeName(input.name.value);
     if (context.cache.records.containsKey(name)) {
       return context.cache.records[name]!;

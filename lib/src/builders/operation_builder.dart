@@ -1,7 +1,9 @@
 import 'package:gql/ast.dart';
 
+import 'package:shazam/src/builders/builder.dart';
 import 'package:shazam/src/builders/fragment_builder.dart';
 import 'package:shazam/src/builders/ir_build_context.dart';
+import 'package:shazam/src/builders/record_build_input.dart';
 import 'package:shazam/src/builders/record_builder.dart';
 import 'package:shazam/src/ir/ir.dart';
 import 'package:shazam/src/naming_helper.dart';
@@ -9,7 +11,7 @@ import 'package:shazam/src/operations_loader.dart';
 import 'package:shazam/src/schema.dart';
 
 /// Builds operations IR, stitching in fragments and records.
-class OperationBuilder {
+class OperationBuilder with Builder<List<OperationIr>, DocumentSource> {
   OperationBuilder(this.context, this.recordBuilder, this.fragmentBuilder)
       : naming = NamingHelper(context.config);
 
@@ -22,18 +24,20 @@ class OperationBuilder {
   final List<RecordIr> variableRecords = [];
   final Map<String, Map<String, Object?>> variableDefaults = {};
 
-  void build(DocumentSource source) {
+  @override
+  List<OperationIr> build(DocumentSource source) {
+    operations.clear();
     for (final def in source.document.definitions) {
       if (def is OperationDefinitionNode && def.name != null) {
         final opName = def.name!.value;
         try {
           final rootType = _rootForOperation(def.type);
-          final record = recordBuilder.build(
+          final record = recordBuilder.build(RecordBuildInput(
             rootType: rootType,
             selection: def.selectionSet,
             name: _pref(opName),
             owner: opName,
-          );
+          ));
           final fragDeps = _collectFragments(def.selectionSet);
           // Merge fragment spreads into record fields to ensure reuse.
           for (final fragName in fragDeps) {
@@ -62,6 +66,7 @@ class OperationBuilder {
         }
       }
     }
+    return operations.values.toList();
   }
 
   String _rootForOperation(OperationType type) {
