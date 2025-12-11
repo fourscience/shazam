@@ -1,6 +1,6 @@
 schema: test/spec_suite/golden/schema.graphql
 input_dir: test/spec_suite/golden
-output_dir: generated
+output_dir: __generated__
 nullable_mode: required
 name_prefix: Gql
 compress_queries: false

@@ -58,4 +58,55 @@ class SchemaDocHelper {
     }
     return null;
   }
+
+  String? fieldDeprecatedReason(String parentType, String fieldName) {
+    final typeDef = schema.types[parentType] ?? schema.interfaces[parentType];
+    if (typeDef == null) return null;
+    final fields = typeDef is ObjectTypeDefinitionNode
+        ? typeDef.fields
+        : typeDef is InterfaceTypeDefinitionNode
+            ? typeDef.fields
+            : const <FieldDefinitionNode>[];
+    for (final f in fields) {
+      if (f.name.value == fieldName) {
+        return _deprecatedReason(f.directives);
+      }
+    }
+    return null;
+  }
+
+  String? inputFieldDeprecatedReason(String inputName, String fieldName) {
+    final input = schema.inputs[inputName];
+    if (input == null) return null;
+    for (final f in input.fields) {
+      if (f.name.value == fieldName) {
+        return _deprecatedReason(f.directives);
+      }
+    }
+    return null;
+  }
+
+  String? enumValueDeprecatedReason(String enumName, String valueName) {
+    final enm = schema.enums[enumName];
+    if (enm == null) return null;
+    for (final v in enm.values) {
+      if (v.name.value == valueName) {
+        return _deprecatedReason(v.directives);
+      }
+    }
+    return null;
+  }
+
+  String? _deprecatedReason(List<DirectiveNode> directives) {
+    for (final directive in directives) {
+      if (directive.name.value != 'deprecated') continue;
+      for (final arg in directive.arguments.whereType<ArgumentNode>()) {
+        if (arg.name.value == 'reason' && arg.value is StringValueNode) {
+          return (arg.value as StringValueNode).value;
+        }
+      }
+      return 'No longer supported';
+    }
+    return null;
+  }
 }

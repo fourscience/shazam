@@ -1,2 +1,5 @@
 .dart_tool
 __generated__
+
+# FVM Version Cache
+.fvm/

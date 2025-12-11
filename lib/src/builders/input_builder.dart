@@ -44,6 +44,9 @@ class InputBuilder with Builder<RecordIr, InputObjectTypeDefinitionNode> {
         description:
             context.docs.inputFieldDescription(input.name.value, field.name.value),
         defaultValue: _valueFromNode(field.defaultValue),
+        deprecatedReason: context
+            .docs
+            .inputFieldDeprecatedReason(input.name.value, field.name.value),
       );
     }
     return record;

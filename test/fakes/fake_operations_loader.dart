@@ -37,5 +37,7 @@ class FakeRenderer implements Renderer {
     DocumentIr ir,
     Config config,
     List<PluginRegistration> plugins,
-  ) async {}
+  ) async {
+    rendered = true;
+  }
 }

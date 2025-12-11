@@ -17,6 +17,7 @@ class EnumEmitter implements Emitter<Spec> {
         ..values.addAll(enm.values.map((v) => EnumValue((ev) {
               ev
                 ..name = _enumCase(v)
+                ..annotations.addAll(_deprecated(enm.valueDeprecations[v]))
                 ..docs.addAll(_docs(enm.valueDescriptions[v]));
             })));
     });
@@ -40,4 +41,9 @@ class EnumEmitter implements Emitter<Spec> {
 
   List<String> _docs(String? description) =>
       (description == null || description.isEmpty) ? [] : [' $description'];
+
+  Iterable<Expression> _deprecated(String? reason) {
+    if (reason == null) return const [];
+    return [refer('Deprecated').call([literalString(reason)])];
+  }
 }

@@ -32,6 +32,10 @@ class RecordEmitter implements Emitter<List<Spec>> {
     }
     typedefBuf.writeln('typedef ${record.name} = ({');
     for (final f in fields) {
+      final deprecated = _deprecatedAnnotation(f.deprecatedReason);
+      if (deprecated != null) {
+        typedefBuf.writeln('  $deprecated');
+      }
       if (f.description != null && f.description!.isNotEmpty) {
         typedefBuf.writeln('  /// ${f.description}');
       }
@@ -175,10 +179,18 @@ class RecordEmitter implements Emitter<List<Spec>> {
       ..writeln('class ${record.name} {')
       ..writeln('  const ${record.name}({');
     for (final f in fields) {
+      final deprecated = _deprecatedAnnotation(f.deprecatedReason);
+      if (deprecated != null) {
+        classBuf.writeln('    $deprecated');
+      }
       classBuf.writeln('    this.${f.name},');
     }
     classBuf.writeln('  });');
     for (final f in fields) {
+      final deprecated = _deprecatedAnnotation(f.deprecatedReason);
+      if (deprecated != null) {
+        classBuf.writeln('  $deprecated');
+      }
       if (f.description != null && f.description!.isNotEmpty) {
         classBuf.writeln('  /// ${f.description}');
       }
@@ -232,4 +244,9 @@ class RecordEmitter implements Emitter<List<Spec>> {
     return specs;
   }
 
+  String? _deprecatedAnnotation(String? reason) {
+    if (reason == null) return null;
+    final safe = reason.replaceAll("'", r"\'");
+    return "@Deprecated('$safe')";
+  }
 }

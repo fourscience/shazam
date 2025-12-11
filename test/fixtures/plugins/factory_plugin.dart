@@ -4,14 +4,22 @@ import 'package:shazam/src/generator_plugin.dart';
 class FactoryPlugin extends GeneratorPlugin {
   FactoryPlugin();
 
-  @override
-  void onDocument(CodegenContext ctx) {}
+  final List<String> calls = [];
 
   @override
-  void onLibrary(LibraryBuilder library, CodegenContext ctx) {}
+  void onDocument(CodegenContext ctx) {
+    calls.add('document:${ctx.ir.path}');
+  }
 
   @override
-  void onRenderComplete(CodegenContext ctx) {}
+  void onLibrary(LibraryBuilder library, CodegenContext ctx) {
+    calls.add('library:${library.body.length}');
+  }
+
+  @override
+  void onRenderComplete(CodegenContext ctx) {
+    calls.add('complete');
+  }
 }
 
 List<GeneratorPlugin> shazamPlugins() => <GeneratorPlugin>[FactoryPlugin()];

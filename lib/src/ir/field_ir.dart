@@ -10,6 +10,7 @@ class FieldIr implements IntermediateRepresentation {
     this.thunkTarget,
     this.description,
     this.defaultValue,
+    this.deprecatedReason,
   });
 
   final String name;
@@ -21,4 +22,5 @@ class FieldIr implements IntermediateRepresentation {
       thunkTarget; // when type is generated as a thunk, points to real target type
   final String? description;
   final Object? defaultValue;
+  final String? deprecatedReason;
 }

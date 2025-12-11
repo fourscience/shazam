@@ -14,7 +14,7 @@ schema {
 enum Role {
   USER
   ADMIN
-  MODERATOR
+  MODERATOR @deprecated(reason: "No more moderation")
 }
 
 enum Reaction {
@@ -30,7 +30,7 @@ interface Node {
 }
 
 interface Person {
-  name: String!
+  name: String! @deprecated(reason: "Use fullName instead")
   role: Role
   fullName: Raw!
   age: Age!

@@ -64,6 +64,11 @@ class DocumentIrBuilder with Builder<DocumentIr, DocumentSource> {
                   v.name.value:
                       context.docs.enumValueDescription(e.name.value, v.name.value)
               },
+              valueDeprecations: {
+                for (final v in e.values)
+                  v.name.value: context.docs
+                      .enumValueDeprecatedReason(e.name.value, v.name.value)
+              },
             ))
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));

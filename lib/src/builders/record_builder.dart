@@ -64,6 +64,8 @@ class RecordBuilder with Builder<RecordIr, RecordBuildInput> {
               hint: fieldDef.type, selectionRecordName: null);
           final fieldDescription =
               context.docs.fieldDescription(input.rootType, sel.name.value);
+          final deprecatedReason =
+              context.docs.fieldDeprecatedReason(input.rootType, sel.name.value);
           final field = FieldIr(
             name: fieldName,
             jsonKey: jsonKey,
@@ -73,6 +75,7 @@ class RecordBuilder with Builder<RecordIr, RecordBuildInput> {
             thunkTarget: null,
             description: fieldDescription ?? fieldDef.description?.value,
             defaultValue: null,
+            deprecatedReason: deprecatedReason,
           );
           spec.fields[fieldName] = field;
           _maybeAddAlias(sel, field, spec);
@@ -84,6 +87,7 @@ class RecordBuilder with Builder<RecordIr, RecordBuildInput> {
             typeName,
             selection,
             typeRef.isList,
+            owner: input.owner,
           );
           final nested = build(RecordBuildInput(
             rootType: typeName,
@@ -91,6 +95,8 @@ class RecordBuilder with Builder<RecordIr, RecordBuildInput> {
             name: selectionRecordName,
             owner: input.owner,
           ));
+          final deprecatedReason =
+              context.docs.fieldDeprecatedReason(input.rootType, sel.name.value);
           spec.fields[fieldName] = FieldIr(
             name: fieldName,
             jsonKey: jsonKey,
@@ -100,6 +106,7 @@ class RecordBuilder with Builder<RecordIr, RecordBuildInput> {
             thunkTarget: null,
             description: fieldDef.description?.value,
             defaultValue: null,
+            deprecatedReason: deprecatedReason,
           );
           _maybeAddAlias(sel, spec.fields[fieldName]!, spec);
         }
@@ -117,6 +124,7 @@ class RecordBuilder with Builder<RecordIr, RecordBuildInput> {
             typeCondition,
             sel.selectionSet,
             true,
+            owner: input.owner,
           );
           final nested = build(
             RecordBuildInput(
@@ -147,11 +155,22 @@ class RecordBuilder with Builder<RecordIr, RecordBuildInput> {
     }
   }
 
-  String _nestedName(
-      String typeName, SelectionSetNode selectionSet, bool isList) {
+  String _nestedName(String typeName, SelectionSetNode selectionSet, bool isList,
+      {String? owner}) {
+    final fields = <String>{};
+    for (final sel in selectionSet.selections) {
+      if (sel is FieldNode) {
+        fields.add(sel.name.value);
+      } else if (sel is FragmentSpreadNode) {
+        fields.add(sel.name.value);
+      } else if (sel is InlineFragmentNode && sel.typeCondition != null) {
+        fields.add(sel.typeCondition!.on.name.value);
+      }
+    }
     final suffix = isList ? 'List' : '';
-    final selectionHash = selectionSet.hashCode.toUnsigned(32).toRadixString(16);
-    return '${context.config.namePrefix}${naming.pascal(typeName)}${suffix}_$selectionHash';
+    final key = (fields.toList()..sort()).map(naming.pascal).join();
+    final selectionKey = key.isEmpty ? 'Selection' : key;
+    return '${context.config.namePrefix}${naming.pascal(typeName)}$suffix$selectionKey';
   }
 
   String _typeNameForSelection(
